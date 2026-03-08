@@ -1,7 +1,7 @@
 #!/usr/bin/make
 
 user_id := $(shell id -u)
-docker_compose_bin := $(shell command -v docker-compose 2> /dev/null) --file "./docker-compose.yml"
+docker_compose_bin := $(shell command -v docker-compose 2> /dev/null)
 node_container_bin := $(docker_compose_bin) run --rm -u "$(user_id)" "app"
 npm_bin := $(node_container_bin) npm run
 
@@ -29,10 +29,16 @@ install: up ## Install all data
 	$(npm_bin) build
 
 shell: up ## Runs shell in container
-	$(node_container_bin) bash
+	$(node_container_bin) /bin/bash
 
 start: install ## Start application
 	$(npm_bin) start
 
 watch: install ## Start application in watch mode
 	$(npm_bin) watch
+
+linter: up ## Lint code
+	$(npm_bin) lint
+
+fixer: up ## Format code with Prettier
+	$(npm_bin) format
