@@ -31,10 +31,8 @@ install: up ## Install all data
 shell: up ## Runs shell in container
 	$(node_container_bin) bash
 
-start: up ## Start application
-	$(npm_bin) build
+start: install ## Start application
 	$(npm_bin) start
 
-watch: up ## Start application in watch mode
-	$(npm_bin) build
+watch: install ## Start application in watch mode
 	$(npm_bin) watch
