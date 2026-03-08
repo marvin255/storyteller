@@ -26,6 +26,15 @@ logs: ## Stop containers
 
 install: up ## Install all data
 	$(node_container_bin) npm install
+	$(npm_bin) build
 
 shell: up ## Runs shell in container
 	$(node_container_bin) bash
+
+start: up ## Start application
+	$(npm_bin) build
+	$(npm_bin) start
+
+watch: up ## Start application in watch mode
+	$(npm_bin) build
+	$(npm_bin) watch
