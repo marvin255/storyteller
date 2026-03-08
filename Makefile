@@ -42,3 +42,12 @@ linter: up ## Lint code
 
 fixer: up ## Format code with Prettier
 	$(npm_bin) format
+
+test: up ## Run tests
+	$(npm_bin) test
+
+test-watch: up ## Run tests in watch mode
+	$(npm_bin) test:watch
+
+test-coverage: up ## Run tests with coverage
+	$(npm_bin) test:coverage
