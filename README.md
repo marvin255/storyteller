@@ -45,12 +45,47 @@ To run the compiled project:
 npm start
 ```
 
+## Docker
+
+### Prerequisites
+
+- Docker
+- Docker Compose
+
+### Running with Docker Compose
+
+```bash
+docker-compose up --build
+```
+
+The app will be available at `http://localhost:3000`.
+
+To run in detached mode:
+
+```bash
+docker-compose up -d --build
+```
+
+To stop:
+
+```bash
+docker-compose down
+```
+
+To rebuild the image:
+
+```bash
+docker-compose build --no-cache
+```
+
 ## Project Structure
 
 ```
 src/
   index.ts          - Entry point
 dist/               - Compiled JavaScript (generated)
+Dockerfile          - Docker image configuration
+docker-compose.yml  - Docker Compose configuration
 ```
 
 ## License

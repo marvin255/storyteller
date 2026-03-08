@@ -1,7 +1,7 @@
 {
   "name": "storyteller",
   "version": "1.0.0",
-  "description": "A Node.js backend project with TypeScript",
+  "description": "Storyteller",
   "main": "dist/index.js",
   "scripts": {
     "build": "tsc",
@@ -9,9 +9,6 @@
     "dev": "tsc && node dist/index.js",
     "watch": "tsc --watch"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
   "devDependencies": {
     "typescript": "^5.3.3",
     "@types/node": "^20.10.6"
