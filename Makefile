@@ -9,45 +9,38 @@ npm_bin := $(node_container_bin) npm run
 
 # --- [ Development tasks ] -------------------------------------------------------------------------------------------
 
-build: ## Build container and install npm libs
+docker-build: ## Build docker container
 	$(docker_compose_bin) build --force-rm
 
-up: ## Start containers
-	$(docker_compose_bin) up -d --remove-orphans
-
-down: ## Stop containers
-	$(docker_compose_bin) down
-
-restart: ## Stop containers
-	$(docker_compose_bin) restart
-
-logs: ## Stop containers
-	$(docker_compose_bin) logs -f
-
-install: up ## Install all data
-	$(node_container_bin) npm install
-	$(npm_bin) build
-
-shell: up ## Runs shell in container
+shell: ## Runs shell in container
 	$(node_container_bin) /bin/bash
 
-start: install ## Start application
+install: ## Install all data
+	$(node_container_bin) npm install
+
+build: ## Build TS files of the application
+	$(npm_bin) build
+
+start: ## Start application
 	$(npm_bin) start
 
 watch: install ## Start application in watch mode
 	$(npm_bin) watch
 
-linter: up ## Lint code
+linter: ## Lint code
 	$(npm_bin) lint
 
-fixer: up ## Format code with Prettier
+fixer: ## Format code with Prettier
 	$(npm_bin) format
 
-test: up ## Run tests
+test: ## Run tests
 	$(npm_bin) test
 
-test-watch: up ## Run tests in watch mode
+test-coverage: ## Run tests with coverage
+	$(npm_bin) test:coverage
+
+test-watch: ## Run tests in watch mode
 	$(npm_bin) test:watch
 
-test-coverage: up ## Run tests with coverage
-	$(npm_bin) test:coverage
+validate-change: ## Run validation checks
+	$(npm_bin) validate:change
