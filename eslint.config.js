@@ -27,6 +27,7 @@ export default [
       ...tsPlugin.configs.recommended.rules,
       ...prettierPlugin.rules,
       'no-console': 'warn',
+      'indent': ['error', 4],
       '@typescript-eslint/no-unused-vars': [
         'error',
         { argsIgnorePattern: '^_' },

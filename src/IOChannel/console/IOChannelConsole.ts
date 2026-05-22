@@ -1,7 +1,5 @@
-import { IOChannel } from "#storyteller/contracts/IO/IOChannel.js";
+import { IOChannel } from '../../contracts/IO/IOChannel.js';
 
 export class IOChannelConsole implements IOChannel {
-    attach(): void {
-        
-    }
+    attach(): void {}
 }

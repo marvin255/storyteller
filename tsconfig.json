@@ -5,10 +5,7 @@
     "moduleResolution": "NodeNext",
     "rootDir": "./src",
     "outDir": "./dist",
-    "strict": true,
-    "paths": {
-      "#storyteller/*": ["./src/*"]
-    }
+    "strict": true
   },
   "include": ["src"]
 }
