@@ -4,6 +4,9 @@
   "description": "Storyteller",
   "type": "module",
   "main": "dist/index.js",
+  "imports": {
+    "#storyteller/*": "./dist/*"
+  },
   "scripts": {
     "build": "tsc",
     "start": "node dist/index.js",
