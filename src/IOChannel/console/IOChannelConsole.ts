@@ -1,5 +1,6 @@
-import { IOChannelListener } from '../../contracts/IOChannel/IOChannelListener.js';
 import readline from 'node:readline';
+
+import { IOChannelListener } from '../../contracts/IOChannel/IOChannelListener.js';
 import { IOChannelSender } from '../../contracts/IOChannel/IOChannelSender.js';
 import { IOMessageOutbound } from '../../contracts/IOChannel/IOMessageOutbound.js';
 

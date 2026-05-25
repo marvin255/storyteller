@@ -31,7 +31,7 @@ linter: ## Lint code
 	$(npm_bin) lint
 
 fixer: ## Format code with Prettier
-	$(npm_bin) format
+	$(npm_bin) format:fixAll
 
 test: ## Run tests
 	$(npm_bin) test
