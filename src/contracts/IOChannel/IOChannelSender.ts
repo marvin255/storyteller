@@ -5,8 +5,6 @@ import { IOMessageOutbound } from './IOMessageOutbound.js';
  * Implementations route to different UI channels (console, web, mobile, etc.)
  */
 export interface IOChannelSender {
-    /**
-     * Send narrative responses to the user via the UI channel
-     */
+    /** Send narrative responses to the user via the UI channel */
     send(message: IOMessageOutbound | IOMessageOutbound[]): void;
 }

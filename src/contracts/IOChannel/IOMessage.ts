@@ -3,20 +3,12 @@
  * Used for both user input and engine output
  */
 export type IOMessage = {
-    /**
-     * Unique identifier for this message
-     */
+    /**  Unique identifier for this message */
     id: string;
-    /**
-     * Session/conversation identifier
-     */
+    /** Session/conversation identifier */
     sessionId: string;
-    /**
-     * User identifier
-     */
+    /** User identifier */
     userId: string;
-    /**
-     * Message content (user input or engine output)
-     */
+    /** Message content (user input or engine output) */
     content: string;
 };

@@ -3,6 +3,7 @@ import tsPlugin from '@typescript-eslint/eslint-plugin';
 import tsParser from '@typescript-eslint/parser';
 import prettierPlugin from 'eslint-config-prettier';
 import simpleImportSort from 'eslint-plugin-simple-import-sort';
+import jsdoc from 'eslint-plugin-jsdoc';
 
 export default [
   {
@@ -23,6 +24,7 @@ export default [
     plugins: {
       '@typescript-eslint': tsPlugin,
       'simple-import-sort': simpleImportSort,
+      jsdoc,
     },
     rules: {
       ...js.configs.recommended.rules,
@@ -37,6 +39,7 @@ export default [
       '@typescript-eslint/no-explicit-any': 'warn',
       'simple-import-sort/imports': 'error',
       'simple-import-sort/exports': 'error',
+      'jsdoc/multiline-blocks': ['error', { noZeroLineText: true }],
     },
   },
 ];
