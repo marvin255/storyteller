@@ -25,10 +25,10 @@ This project uses the following technologies:
         - Docker: `docker-compose run --rm -u "$(user_id)" "app" npm run build`
         - Make: `make build`
     - Fix files so they follow the code style
-        - Docker: `docker-compose run --rm -u "$(user_id)" "app" npm run format:fixAll`
+        - Docker: `docker-compose run --rm -u "$(user_id)" "app" npm run fixer`
         - Make: `make fixer`
     - Run the linter (static analysis and code style checks)
-        - Docker: `docker-compose run --rm -u "$(user_id)" "app" npm run lint`
+        - Docker: `docker-compose run --rm -u "$(user_id)" "app" npm run linter`
         - Make: `make linter`
     - Run all tests
         - Docker: `docker-compose run --rm -u "$(user_id)" "app" npm run test`

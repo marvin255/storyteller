@@ -28,10 +28,10 @@ watch: install ## Start application in watch mode
 	$(npm_bin) watch
 
 linter: ## Lint code
-	$(npm_bin) lint
+	$(npm_bin) linter
 
 fixer: ## Format code with Prettier
-	$(npm_bin) format:fixAll
+	$(npm_bin) fixer
 
 test: ## Run tests
 	$(npm_bin) test
