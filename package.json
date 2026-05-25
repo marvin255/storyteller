@@ -18,7 +18,7 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
-    "validate:change": "npm run fixer && npm run prettier && npm run eslint && npm run test"
+    "verify": "npm run fixer && npm run linter && npm run test"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.0",

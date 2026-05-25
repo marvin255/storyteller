@@ -36,9 +36,9 @@ This project uses the following technologies:
     - Run all tests with code coverage
         - Docker: `docker-compose run --rm -u "$(user_id)" "app" npm run test:coverage`
         - Make: `make test-coverage`
-    - Run all validations required to verify a single change
-        - Docker: `docker-compose run --rm -u "$(user_id)" "app" npm run validate:change`
-        - Make: `make validate-change`
+    - Run all validations required to verify that currenct changes are correct and follow all rules
+        - Docker: `docker-compose run --rm -u "$(user_id)" "app" npm run verify`
+        - Make: `make verify`
     - Start a Bash session in the container environment
         - Docker: `docker-compose run --rm -u "$(user_id)" "app" /bin/bash`
         - Make: `make shell`
@@ -48,16 +48,9 @@ This project uses the following technologies:
 - Make the change.
 - Add one or more tests for the change, and update existing tests as needed. All changes must be covered by unit tests.
 - To verify that the change is correct, run the following steps in order. If any step fails, stop and fix the issue before continuing:
-    - Prefer running `make validate-change` to perform all checks in a single command.
+    - Prefer running `make verify` to perform all checks in a single command.
     - Alternatively, run each check separately:
         - Format the files to match the code style.
         - Run the linter.
         - Run all tests.
 - After making the change, update `./README.md` and any other relevant documentation as needed.
-
-## Installing/updating npm library workflow
-
-- Start a Bash session in the container using `make shell`, or `docker-compose run --rm -u "$(user_id)" "app" /bin/bash` if `make` is not available.
-- In the container terminal, run any npm command, e.g. `npm install Foo`.
-- Wait for the installation to complete.
-- Verify the changes with `make build`, or `docker-compose run --rm -u "$(user_id)" "app" npm run build` if `make` is not available.

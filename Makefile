@@ -42,5 +42,5 @@ test-coverage: ## Run tests with coverage
 test-watch: ## Run tests in watch mode
 	$(npm_bin) test:watch
 
-validate-change: ## Run validation checks
-	$(npm_bin) validate:change
+verify: ## Run validation checks
+	$(npm_bin) verify
