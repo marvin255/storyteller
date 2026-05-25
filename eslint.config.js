@@ -39,7 +39,11 @@ export default [
       '@typescript-eslint/no-explicit-any': 'warn',
       'simple-import-sort/imports': 'error',
       'simple-import-sort/exports': 'error',
-      'jsdoc/multiline-blocks': ['error', { noZeroLineText: true }],
-    },
+      'jsdoc/check-alignment': 'error',
+      'jsdoc/check-indentation': 'error',
+      'jsdoc/check-line-alignment': 'error',
+      'jsdoc/require-asterisk-prefix': 'error',
+      'jsdoc/no-multi-asterisks': 'error'
+    }
   },
 ];

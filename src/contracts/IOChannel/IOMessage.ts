@@ -1,9 +1,9 @@
 /**
  * Base message structure for all I/O communication.
- * Used for both user input and engine output
+ * Used for both user input and engine output.
  */
 export type IOMessage = {
-    /**  Unique identifier for this message */
+    /** Unique identifier for this message */
     id: string;
     /** Session/conversation identifier */
     sessionId: string;
