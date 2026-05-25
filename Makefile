@@ -18,6 +18,15 @@ shell: ## Runs shell in container
 install: ## Install all data
 	$(node_container_bin) npm install
 
+install-package: ## Install a single npm package (usage: make install-package LIBRARY=package-name)
+	$(node_container_bin) npm install $(LIBRARY)
+
+install-package-dev: ## Install a single npm package as dev dependency (usage: make install-package-dev LIBRARY=package-name)
+	$(node_container_bin) npm install -D $(LIBRARY)
+
+remove-package: ## Remove a single npm package (usage: make remove-package LIBRARY=package-name)
+	$(node_container_bin) npm uninstall $(LIBRARY)
+
 build: ## Build TS files of the application
 	$(npm_bin) build
 

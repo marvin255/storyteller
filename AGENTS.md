@@ -21,6 +21,15 @@ This project uses the following technologies:
     - Install all dependencies
         - Docker: `docker-compose run --rm -u "$(user_id)" "app" npm install`
         - Make: `make install`
+    - Install a single npm package
+        - Docker: `docker-compose run --rm -u "$(user_id)" "app" npm install {{LIBRARY}}`
+        - Make: `make install-package LIBRARY={{LIBRARY}}`
+    - Install a single npm package as dev dependency
+        - Docker: `docker-compose run --rm -u "$(user_id)" "app" npm install -D {{LIBRARY}}`
+        - Make: `make install-package-dev LIBRARY={{LIBRARY}}`
+    - Remove a single npm package
+        - Docker: `docker-compose run --rm -u "$(user_id)" "app" npm uninstall {{LIBRARY}}`
+        - Make: `make remove-package LIBRARY={{LIBRARY}}`
     - Build application including ts
         - Docker: `docker-compose run --rm -u "$(user_id)" "app" npm run build`
         - Make: `make build`
