@@ -1,6 +1,6 @@
-import { IOChannel } from './contracts/IOChannel/IOChannel.js';
+import { IOChannelListener } from './contracts/IOChannel/IOChannelListener.js';
 import { IOChannelConsole } from './IOChannel/console/IOChannelConsole.js';
 
-const channel: IOChannel = new IOChannelConsole();
+const channel: IOChannelListener = new IOChannelConsole();
 
-channel.attach();
+channel.listen();

@@ -1,8 +1,10 @@
-import { IOChannel } from '../../contracts/IOChannel/IOChannel.js';
+import { IOChannelListener } from '../../contracts/IOChannel/IOChannelListener.js';
 import readline from 'node:readline';
+import { IOChannelSender } from '../../contracts/IOChannel/IOChannelSender.js';
+import { IOMessageOutbound } from '../../contracts/IOChannel/IOMessageOutbound.js';
 
-export class IOChannelConsole implements IOChannel {
-    attach(): void {
+export class IOChannelConsole implements IOChannelListener, IOChannelSender {
+    listen(): void {
         const readlineInstance = this.createReadlineInstance();
         process.stdout.write('storyteller > ');
         readlineInstance.on('line', (line) => {
@@ -13,6 +15,10 @@ export class IOChannelConsole implements IOChannel {
                 process.stdout.write('storyteller > ');
             }
         });
+    }
+
+    send(message: IOMessageOutbound | IOMessageOutbound[]): void {
+        process.stdout.write(`Sending message: ${JSON.stringify(message)}\n`);
     }
 
     private createReadlineInstance(): readline.Interface {
