@@ -9,6 +9,6 @@ export type IOMessage = {
     sessionId: string;
     /** User identifier */
     userId: string;
-    /** Message content (user input or engine output) */
+    /** Message content */
     content: string;
 };
