@@ -54,3 +54,10 @@ This project uses the following technologies:
         - Run the linter.
         - Run all tests.
 - After making the change, update `./README.md` and any other relevant documentation as needed.
+
+## Installing/updating npm library workflow
+
+- Start a Bash session in the container using `make shell`, or `docker-compose run --rm -u "$(user_id)" "app" /bin/bash` if `make` is not available.
+- In the container terminal, run any npm command, e.g. `npm install Foo`.
+- Wait for the installation to complete.
+- Verify the changes with `make build`, or `docker-compose run --rm -u "$(user_id)" "app" npm run build` if `make` is not available.
