@@ -3,4 +3,4 @@ import { IOChannelConsole } from './IOChannel/console/IOChannelConsole.js';
 
 const channel: IOChannelListener = new IOChannelConsole();
 
-channel.listen();
+channel.attachEngine();
