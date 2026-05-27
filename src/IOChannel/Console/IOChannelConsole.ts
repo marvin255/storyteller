@@ -1,6 +1,7 @@
 import readline from 'node:readline';
 import type { Readable, Writable } from 'node:stream';
 
+import { createId, type Id } from '../../Contracts/Data/Id.js';
 import type { Engine } from '../../Contracts/Engine/Engine.js';
 import type { IOChannelListener } from '../../Contracts/IOChannel/IOChannelListener.js';
 import type { IOChannelSender } from '../../Contracts/IOChannel/IOChannelSender.js';
@@ -10,6 +11,8 @@ export class IOChannelConsole implements IOChannelListener, IOChannelSender {
     constructor(
         private readonly input: Readable = process.stdin,
         private readonly output: Writable = process.stdout,
+        private readonly sessionId: Id = createId('user'),
+        private readonly applicationId: Id = createId('storyteller'),
     ) {}
 
     attachEngine(_engine: Engine): void {
@@ -35,11 +38,11 @@ export class IOChannelConsole implements IOChannelListener, IOChannelSender {
     }
 
     private formatInboundMessage(message: string): string {
-        return `You entered: ${message}\n`;
+        return `${this.sessionId} > ${message}\n`;
     }
 
     private formatOutboundMessage(message: IOMessageOutbound): string {
-        return `${message.content}\n`;
+        return `${this.applicationId} > ${message.content}\n`;
     }
 
     private write(message: string): void {
