@@ -17,9 +17,13 @@ export class IOChannelConsole implements IOChannelListener, IOChannelSender {
 
     attachEngine(engine: Engine): void {
         const readlineInstance = this.createReadlineInstance();
-        this.write(this.formatOutboundMessage(''));
+        const inputPlaceholder = this.formatOutboundMessage('');
+
+        this.write(inputPlaceholder);
+
         readlineInstance.on('line', (line) => {
             this.handleLine(line, readlineInstance, engine);
+            this.write(inputPlaceholder);
         });
     }
 
@@ -37,7 +41,6 @@ export class IOChannelConsole implements IOChannelListener, IOChannelSender {
             readlineInstance.close();
         } else {
             this.write(this.formatInboundMessage(line));
-            this.write(this.formatOutboundMessage(''));
         }
     }
 
