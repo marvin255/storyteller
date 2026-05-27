@@ -25,19 +25,21 @@
 
 ## Common commands
 
-| Task | Make command | Docker command |
-| --- | --- | --- |
-| Install all dependencies | `make install` | `docker-compose run --rm -u "$(user_id)" "app" npm install` |
-| Install a package | `make install-package LIBRARY={{LIBRARY}}` | `docker-compose run --rm -u "$(user_id)" "app" npm install {{LIBRARY}}` |
-| Install a dev package | `make install-package-dev LIBRARY={{LIBRARY}}` | `docker-compose run --rm -u "$(user_id)" "app" npm install -D {{LIBRARY}}` |
-| Remove a package | `make remove-package LIBRARY={{LIBRARY}}` | `docker-compose run --rm -u "$(user_id)" "app" npm uninstall {{LIBRARY}}` |
-| Build the TypeScript application | `make build` | `docker-compose run --rm -u "$(user_id)" "app" npm run build` |
-| Fix formatting and lint issues | `make fixer` | `docker-compose run --rm -u "$(user_id)" "app" npm run fixer` |
-| Run static analysis and style checks | `make linter` | `docker-compose run --rm -u "$(user_id)" "app" npm run linter` |
-| Run all tests | `make test` | `docker-compose run --rm -u "$(user_id)" "app" npm run test` |
-| Run all tests with coverage | `make test-coverage` | `docker-compose run --rm -u "$(user_id)" "app" npm run test:coverage` |
-| Run all validation checks | `make verify` | `docker-compose run --rm -u "$(user_id)" "app" npm run verify` |
-| Start a shell in the container | `make shell` | `docker-compose run --rm -u "$(user_id)" "app" /bin/bash` |
+Use these `make` targets for routine work:
+
+| Task | Command |
+| --- | --- |
+| Install dependencies | `make install` |
+| Install a package | `make install-package LIBRARY={{LIBRARY}}` |
+| Install a dev package | `make install-package-dev LIBRARY={{LIBRARY}}` |
+| Remove a package | `make remove-package LIBRARY={{LIBRARY}}` |
+| Build the TypeScript application | `make build` |
+| Fix formatting and lint issues | `make fixer` |
+| Run static analysis and style checks | `make linter` |
+| Run all tests | `make test` |
+| Run all tests with coverage | `make test-coverage` |
+| Run all validation checks | `make verify` |
+| Start a shell in the container | `make shell` |
 
 ## Development workflow
 
