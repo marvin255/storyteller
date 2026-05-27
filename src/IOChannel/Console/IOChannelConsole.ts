@@ -38,12 +38,16 @@ export class IOChannelConsole implements IOChannelListener, IOChannelSender {
     }
 
     private formatInboundMessage(message: string): string {
-        return `${this.sessionId} > ${message}\n`;
+        return this.formatMessage(this.sessionId, message);
     }
 
     private formatOutboundMessage(message: IOMessageOutbound | string): string {
         const content = typeof message === 'string' ? message : message.content;
-        return `${this.applicationId} > ${content}\n`;
+        return this.formatMessage(this.applicationId, content);
+    }
+
+    private formatMessage(sender: string, message: string): string {
+        return `${sender} > ${message}\n`;
     }
 
     private write(message: string): void {
