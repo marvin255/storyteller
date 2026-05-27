@@ -1,65 +1,66 @@
 # AGENTS
 
-## Project Technologies
+## Stack
 
-This project uses the following technologies:
+- Node.js 24
+- TypeScript
+- Jest
+- ESLint and Prettier
 
-- **Node.js 24** as the runtime environment.
-- **TypeScript** for development and type safety.
-- **Jest** for unit testing.
+## Project structure
 
+- Source code lives in `src/`.
+- Unit tests live in `tests/`.
+- Compiled output is written to `dist/`.
 
-## Dev environment
+## Command policy
 
-- All development lifecycle commands must be run inside the Docker container.
-    - Docker Compose is located at `./docker-compose.yml`
-    - The PHP container is named `app`
-    - All important commands are defined in package.json, so use the following pattern to run them: `docker-compose run --rm -u "$(user_id)" "app" npm run {{command}}`
-    - Aliases for all commands are also defined in the `Makefile`.
-    - Using `make` is always preferable when it is installed in the current environment.
-- Commands
-    - Install all dependencies
-        - Docker: `docker-compose run --rm -u "$(user_id)" "app" npm install`
-        - Make: `make install`
-    - Install a single npm package
-        - Docker: `docker-compose run --rm -u "$(user_id)" "app" npm install {{LIBRARY}}`
-        - Make: `make install-package LIBRARY={{LIBRARY}}`
-    - Install a single npm package as dev dependency
-        - Docker: `docker-compose run --rm -u "$(user_id)" "app" npm install -D {{LIBRARY}}`
-        - Make: `make install-package-dev LIBRARY={{LIBRARY}}`
-    - Remove a single npm package
-        - Docker: `docker-compose run --rm -u "$(user_id)" "app" npm uninstall {{LIBRARY}}`
-        - Make: `make remove-package LIBRARY={{LIBRARY}}`
-    - Build application including ts
-        - Docker: `docker-compose run --rm -u "$(user_id)" "app" npm run build`
-        - Make: `make build`
-    - Fix files so they follow the code style
-        - Docker: `docker-compose run --rm -u "$(user_id)" "app" npm run fixer`
-        - Make: `make fixer`
-    - Run the linter (static analysis and code style checks)
-        - Docker: `docker-compose run --rm -u "$(user_id)" "app" npm run linter`
-        - Make: `make linter`
-    - Run all tests
-        - Docker: `docker-compose run --rm -u "$(user_id)" "app" npm run test`
-        - Make: `make test`
-    - Run all tests with code coverage
-        - Docker: `docker-compose run --rm -u "$(user_id)" "app" npm run test:coverage`
-        - Make: `make test-coverage`
-    - Run all validations required to verify that currenct changes are correct and follow all rules
-        - Docker: `docker-compose run --rm -u "$(user_id)" "app" npm run verify`
-        - Make: `make verify`
-    - Start a Bash session in the container environment
-        - Docker: `docker-compose run --rm -u "$(user_id)" "app" /bin/bash`
-        - Make: `make shell`
+- Run all development lifecycle commands inside the Docker container.
+- Docker Compose is configured in `./docker-compose.yml`.
+- The application service is named `app`.
+- Prefer `make` targets when they are available.
+- Use raw `docker-compose` commands only when `make` is unavailable or a needed task is not exposed by the `Makefile`.
+- Raw Docker commands should use this pattern:
+  `docker-compose run --rm -u "$(user_id)" "app" npm run {{command}}`
+
+## Common commands
+
+| Task | Make command | Docker command |
+| --- | --- | --- |
+| Install all dependencies | `make install` | `docker-compose run --rm -u "$(user_id)" "app" npm install` |
+| Install a package | `make install-package LIBRARY={{LIBRARY}}` | `docker-compose run --rm -u "$(user_id)" "app" npm install {{LIBRARY}}` |
+| Install a dev package | `make install-package-dev LIBRARY={{LIBRARY}}` | `docker-compose run --rm -u "$(user_id)" "app" npm install -D {{LIBRARY}}` |
+| Remove a package | `make remove-package LIBRARY={{LIBRARY}}` | `docker-compose run --rm -u "$(user_id)" "app" npm uninstall {{LIBRARY}}` |
+| Build the TypeScript application | `make build` | `docker-compose run --rm -u "$(user_id)" "app" npm run build` |
+| Fix formatting and lint issues | `make fixer` | `docker-compose run --rm -u "$(user_id)" "app" npm run fixer` |
+| Run static analysis and style checks | `make linter` | `docker-compose run --rm -u "$(user_id)" "app" npm run linter` |
+| Run all tests | `make test` | `docker-compose run --rm -u "$(user_id)" "app" npm run test` |
+| Run all tests with coverage | `make test-coverage` | `docker-compose run --rm -u "$(user_id)" "app" npm run test:coverage` |
+| Run all validation checks | `make verify` | `docker-compose run --rm -u "$(user_id)" "app" npm run verify` |
+| Start a shell in the container | `make shell` | `docker-compose run --rm -u "$(user_id)" "app" /bin/bash` |
 
 ## Development workflow
 
-- Make the change.
-- Add one or more tests for the change, and update existing tests as needed. All changes must be covered by unit tests.
-- To verify that the change is correct, run the following steps in order. If any step fails, stop and fix the issue before continuing:
-    - Prefer running `make verify` to perform all checks in a single command.
-    - Alternatively, run each check separately:
-        - Format the files to match the code style.
-        - Run the linter.
-        - Run all tests.
-- After making the change, update `./README.md` and any other relevant documentation as needed.
+- Keep changes focused on the requested task.
+- Follow existing project patterns before introducing new abstractions.
+- Add or update Jest tests for behavior changes. Production code changes should be covered by unit tests.
+- Avoid adding dependencies unless they are clearly justified.
+- If dependencies change, use the package-management commands above and keep the lockfile in sync.
+- Update `README.md` or other relevant documentation when setup, commands, behavior, or public usage changes.
+
+## Verification
+
+- Prefer running `make verify` to perform all checks in one command.
+- If checking separately, run the steps in this order:
+  1. `make fixer`
+  2. `make linter`
+  3. `make test`
+- If any verification step fails, stop and fix the issue before continuing.
+- `make fixer` can modify files; inspect the diff afterward before finalizing changes.
+
+## Git and workspace guardrails
+
+- Do not revert or overwrite unrelated user changes.
+- Check the existing diff before making broad edits.
+- Keep unrelated refactors out of task-focused changes.
+- Mention any verification command that was not run.
