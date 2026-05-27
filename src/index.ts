@@ -1,12 +1,7 @@
-import type { Engine } from './Contracts/Engine/Engine.js';
-import type { IOChannelListener } from './Contracts/IOChannel/IOChannelListener.js';
+import { LLMEngine } from './Engine/LLMEngine.js';
 import { IOChannelConsole } from './IOChannel/Console/IOChannelConsole.js';
 
-const engine: Engine = {
-    handle: (_message) => {
-        // The console channel currently echoes input directly.
-    },
-};
-const channel: IOChannelListener = new IOChannelConsole();
+const channel = new IOChannelConsole();
+const engine = new LLMEngine(channel);
 
 channel.attachEngine(engine);
