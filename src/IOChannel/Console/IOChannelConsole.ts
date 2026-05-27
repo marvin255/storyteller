@@ -8,7 +8,21 @@ import type { IOChannelSender } from '../../Contracts/IOChannel/IOChannelSender.
 import type { IOMessageInbound } from '../../Contracts/IOChannel/IOMessageInbound.js';
 import type { IOMessageOutbound } from '../../Contracts/IOChannel/IOMessageOutbound.js';
 
+type IOChannelConsoleCommand = Readonly<{
+    isApllicableToString: (line: string) => boolean;
+    apply: (line: string, readlineInstance: readline.Interface) => void;
+}>;
+
 export class IOChannelConsole implements IOChannelListener, IOChannelSender {
+    private readonly commands: readonly IOChannelConsoleCommand[] = Object.freeze([
+        Object.freeze({
+            isApllicableToString: (line: string) => line === '/exit',
+            apply: (_line: string, readlineInstance: readline.Interface) => {
+                readlineInstance.close();
+            },
+        }),
+    ]);
+
     constructor(
         private readonly input: Readable = process.stdin,
         private readonly output: Writable = process.stdout,
@@ -19,7 +33,7 @@ export class IOChannelConsole implements IOChannelListener, IOChannelSender {
 
     attachEngine(engine: Engine): void {
         const readlineInstance = this.createReadlineInstance();
-        const inputPlaceholder = this.formatOutboundMessage('');
+        const inputPlaceholder = this.formatInboundMessage('');
 
         this.write(inputPlaceholder);
 
@@ -39,12 +53,13 @@ export class IOChannelConsole implements IOChannelListener, IOChannelSender {
     }
 
     private handleLine(line: string, readlineInstance: readline.Interface, engine: Engine): void {
-        if (line === '/exit') {
-            readlineInstance.close();
-        } else {
-            engine.handle(this.createInboundMessage(line));
-            this.write(this.formatInboundMessage(line));
+        for (const command of this.commands) {
+            if (command.isApllicableToString(line)) {
+                command.apply(line, readlineInstance);
+                return;
+            }
         }
+        engine.handle(this.createInboundMessage(line));
     }
 
     private createInboundMessage(message: string): IOMessageInbound {
