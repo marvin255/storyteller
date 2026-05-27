@@ -15,16 +15,11 @@ export class IOChannelConsole implements IOChannelListener, IOChannelSender {
         private readonly applicationId: Id = createId('storyteller'),
     ) {}
 
-    attachEngine(_engine: Engine): void {
+    attachEngine(engine: Engine): void {
         const readlineInstance = this.createReadlineInstance();
         this.write(this.formatOutboundMessage(''));
         readlineInstance.on('line', (line) => {
-            if (line === '/exit') {
-                readlineInstance.close();
-            } else {
-                this.write(this.formatInboundMessage(line));
-                this.write(this.formatOutboundMessage(''));
-            }
+            this.handleLine(line, readlineInstance, engine);
         });
     }
 
@@ -35,6 +30,15 @@ export class IOChannelConsole implements IOChannelListener, IOChannelSender {
             .forEach((formattedMessage) => {
                 this.write(formattedMessage);
             });
+    }
+
+    private handleLine(line: string, readlineInstance: readline.Interface, _engine: Engine): void {
+        if (line === '/exit') {
+            readlineInstance.close();
+        } else {
+            this.write(this.formatInboundMessage(line));
+            this.write(this.formatOutboundMessage(''));
+        }
     }
 
     private formatInboundMessage(message: string): string {
