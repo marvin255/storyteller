@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import readline from 'node:readline';
 import type { Readable, Writable } from 'node:stream';
 
@@ -5,6 +6,7 @@ import { createId, type Id } from '../../Contracts/Data/Id.js';
 import type { Engine } from '../../Contracts/Engine/Engine.js';
 import type { IOChannelListener } from '../../Contracts/IOChannel/IOChannelListener.js';
 import type { IOChannelSender } from '../../Contracts/IOChannel/IOChannelSender.js';
+import type { IOMessageInbound } from '../../Contracts/IOChannel/IOMessageInbound.js';
 import type { IOMessageOutbound } from '../../Contracts/IOChannel/IOMessageOutbound.js';
 
 export class IOChannelConsole implements IOChannelListener, IOChannelSender {
@@ -37,12 +39,22 @@ export class IOChannelConsole implements IOChannelListener, IOChannelSender {
             });
     }
 
-    private handleLine(line: string, readlineInstance: readline.Interface, _engine: Engine): void {
+    private handleLine(line: string, readlineInstance: readline.Interface, engine: Engine): void {
         if (line === '/exit') {
             readlineInstance.close();
         } else {
+            engine.handle(this.createInboundMessage(line));
             this.write(this.formatInboundMessage(line));
         }
+    }
+
+    private createInboundMessage(message: string): IOMessageInbound {
+        return {
+            id: createId(randomUUID()),
+            sessionId: this.sessionId,
+            userId: this.userId,
+            content: message,
+        };
     }
 
     private formatInboundMessage(message: string): string {
