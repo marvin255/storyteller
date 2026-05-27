@@ -3,7 +3,10 @@
   "version": "1.0.0",
   "description": "Storyteller",
   "type": "module",
-  "main": "dist/index.js",
+  "engines": {
+    "node": ">=24.0.0"
+  },
+  "main": "./dist/index.js",
   "scripts": {
     "build": "tsc",
     "start": "node dist/index.js",
@@ -18,7 +21,7 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
-    "verify": "npm run fixer && npm run linter && npm run test"
+    "verify": "npm run fixer && npm run linter && npm run build && npm run test"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.0",
