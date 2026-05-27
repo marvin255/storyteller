@@ -26,7 +26,11 @@ export class IOChannelConsole implements IOChannelListener, IOChannelSender {
     }
 
     send(message: IOMessageOutbound | IOMessageOutbound[]): void {
-        this.output.write(`Sending message: ${JSON.stringify(message)}\n`);
+        const messages = Array.isArray(message) ? message : [message];
+
+        for (const outboundMessage of messages) {
+            this.output.write(`${outboundMessage.content}\n`);
+        }
     }
 
     private createReadlineInstance(): readline.Interface {
