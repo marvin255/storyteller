@@ -19,7 +19,7 @@ export class IOChannelConsole implements IOChannelListener, IOChannelSender {
             if (line === '/exit') {
                 readlineInstance.close();
             } else {
-                this.write(`You entered: ${line}\n`);
+                this.write(this.formatInboundMessage(line));
                 this.write('storyteller > ');
             }
         });
@@ -27,9 +27,19 @@ export class IOChannelConsole implements IOChannelListener, IOChannelSender {
 
     send(message: IOMessageOutbound | IOMessageOutbound[]): void {
         const messages = Array.isArray(message) ? message : [message];
-        for (const outboundMessage of messages) {
-            this.write(`${outboundMessage.content}\n`);
-        }
+        messages
+            .map((outboundMessage) => this.formatOutboundMessage(outboundMessage))
+            .forEach((formattedMessage) => {
+                this.write(formattedMessage);
+            });
+    }
+
+    private formatInboundMessage(message: string): string {
+        return `You entered: ${message}\n`;
+    }
+
+    private formatOutboundMessage(message: IOMessageOutbound): string {
+        return `${message.content}\n`;
     }
 
     private write(message: string): void {
