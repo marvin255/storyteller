@@ -13,16 +13,16 @@ type IOChannelConsoleCommand = Readonly<{
     apply: (line: string, readlineInstance: readline.Interface) => void;
 }>;
 
-export class IOChannelConsole implements IOChannelListener, IOChannelSender {
-    private readonly commands: readonly IOChannelConsoleCommand[] = Object.freeze([
-        Object.freeze({
-            isApllicableToString: (line: string) => line === '/exit',
-            apply: (_line: string, readlineInstance: readline.Interface) => {
-                readlineInstance.close();
-            },
-        }),
-    ]);
+const IO_CHANNEL_CONSOLE_COMMANDS: readonly IOChannelConsoleCommand[] = [
+    {
+        isApllicableToString: (line: string) => line === '/exit',
+        apply: (_line: string, readlineInstance: readline.Interface) => {
+            readlineInstance.close();
+        },
+    },
+];
 
+export class IOChannelConsole implements IOChannelListener, IOChannelSender {
     constructor(
         private readonly input: Readable = process.stdin,
         private readonly output: Writable = process.stdout,
@@ -53,7 +53,7 @@ export class IOChannelConsole implements IOChannelListener, IOChannelSender {
     }
 
     private handleLine(line: string, readlineInstance: readline.Interface, engine: Engine): void {
-        for (const command of this.commands) {
+        for (const command of IO_CHANNEL_CONSOLE_COMMANDS) {
             if (command.isApllicableToString(line)) {
                 command.apply(line, readlineInstance);
                 return;
