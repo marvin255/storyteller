@@ -37,7 +37,6 @@ export default [
       'array-callback-return': 'error',
       'curly': ['error', 'all'],
       'default-case-last': 'error',
-      'indent': ['error', 4],
       'no-console': 'error',
       'no-else-return': ['error', { allowElseIf: false }],
       'no-implicit-coercion': 'error',

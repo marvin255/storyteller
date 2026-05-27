@@ -46,9 +46,9 @@ describe('createId', () => {
         (
             _message,
             value,
-            expectedMessage = "Can't cast provided data to Id: use A-Z, a-z, 0-9, _, -"
+            expectedMessage = "Can't cast provided data to Id: use A-Z, a-z, 0-9, _, -",
         ) => {
             expect(() => createId(value)).toThrow(expectedMessage);
-        }
+        },
     );
 });
