@@ -46,8 +46,8 @@
 
 ## Code conventions
 
-- Contracts, interfaces, and shared data types live under `src/contracts/`.
-- Concrete implementations live outside `src/contracts/`.
+- Contracts, interfaces, and shared data types live under `src/Contracts/`.
+- Concrete implementations live outside `src/Contracts/`.
 - Use `.js` extensions for local ESM imports in TypeScript files.
 - Create branded values, such as `Id`, through their factory functions instead of direct type assertions outside the defining module.
 - Keep public contracts small and UI-agnostic; put channel-specific behavior in implementation modules.

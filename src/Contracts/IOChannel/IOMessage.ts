@@ -1,4 +1,4 @@
-import type { Id } from '../data/Id.js';
+import type { Id } from '../Data/Id.js';
 
 /**
  * Base message structure for all I/O communication.

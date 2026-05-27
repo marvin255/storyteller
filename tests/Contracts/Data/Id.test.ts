@@ -1,6 +1,6 @@
 import { describe, expect, test } from '@jest/globals';
 
-import { createId, type Id } from '../../../src/contracts/data/Id.js';
+import { createId, type Id } from '../../../src/Contracts/Data/Id.js';
 
 describe('createId', () => {
     test.each([
