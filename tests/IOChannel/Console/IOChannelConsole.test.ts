@@ -52,7 +52,7 @@ describe('IOChannelConsole', () => {
         consoleChannel.attachEngine(engine);
 
         expect(createInterface).toHaveBeenCalledWith({ input, output });
-        expect(output.write).toHaveBeenCalledWith('initial-user (initial-session) > \n');
+        expect(output.write).toHaveBeenCalledWith('initial-user (initial-session) > ');
         expect(readlineInstance.on).toHaveBeenCalledWith('line', expect.any(Function));
     });
 
@@ -78,7 +78,7 @@ describe('IOChannelConsole', () => {
             input: process.stdin,
             output: process.stdout,
         });
-        expect(stdoutWrite).toHaveBeenNthCalledWith(1, 'console-user (story) > \n');
+        expect(stdoutWrite).toHaveBeenNthCalledWith(1, 'console-user (story) > ');
         expect(stdoutWrite).toHaveBeenNthCalledWith(
             2,
             'storyteller (reply-session) > Default channel response.\n',
@@ -175,7 +175,6 @@ describe('IOChannelConsole', () => {
             content: 'A lantern flickers.',
         });
 
-        expect(output.write).toHaveBeenCalledTimes(1);
         expect(output.write).toHaveBeenCalledWith(
             'channel (reply-session) > A lantern flickers.\n',
         );

@@ -25,12 +25,14 @@ export class IOChannelConsole implements IOChannelListener, IOChannelSender {
             isApplicable: (line: string) => /^\/user-id\s+[A-Za-z0-9_-]+$/u.test(line),
             apply: (line: string) => {
                 this.userId = createId(line.split(/\s+/u)[1]);
+                this.writetMessagePlaceholder();
             },
         },
         {
             isApplicable: (line: string) => /^\/session-id\s+[A-Za-z0-9_-]+$/u.test(line),
             apply: (line: string) => {
                 this.sessionId = createId(line.split(/\s+/u)[1]);
+                this.writetMessagePlaceholder();
             },
         },
     ];
@@ -46,7 +48,7 @@ export class IOChannelConsole implements IOChannelListener, IOChannelSender {
     attachEngine(engine: Engine): void {
         const readlineInstance = this.createReadlineInstance();
 
-        this.write(this.formatInboundMessage(''));
+        this.writetMessagePlaceholder();
 
         readlineInstance.on('line', (line) => {
             this.handleLine(line, readlineInstance, engine);
@@ -60,6 +62,7 @@ export class IOChannelConsole implements IOChannelListener, IOChannelSender {
             .forEach((formattedMessage) => {
                 this.write(formattedMessage);
             });
+        this.writetMessagePlaceholder();
     }
 
     private handleLine(line: string, readlineInstance: readline.Interface, engine: Engine): void {
@@ -82,16 +85,16 @@ export class IOChannelConsole implements IOChannelListener, IOChannelSender {
         };
     }
 
-    private formatInboundMessage(message: string): string {
-        return this.formatMessage(this.userId, this.sessionId, message);
-    }
-
     private formatOutboundMessage(message: IOMessageOutbound): string {
         return this.formatMessage(this.channelId, message.sessionId, message.content);
     }
 
     private formatMessage(sender: string, sessionId: string, message: string): string {
         return `${sender} (${sessionId}) > ${message}\n`;
+    }
+
+    private writetMessagePlaceholder(): void {
+        this.write(`${this.userId} (${this.sessionId}) > `);
     }
 
     private write(message: string): void {
