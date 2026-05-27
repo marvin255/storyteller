@@ -13,33 +13,44 @@ type IOChannelConsoleCommand = Readonly<{
     apply: (line: string, readlineInstance: readline.Interface) => void;
 }>;
 
-const IO_CHANNEL_CONSOLE_COMMANDS: readonly IOChannelConsoleCommand[] = [
-    {
-        isApllicableToString: (line: string) => line === '/exit',
-        apply: (_line: string, readlineInstance: readline.Interface) => {
-            readlineInstance.close();
-        },
-    },
-];
-
 export class IOChannelConsole implements IOChannelListener, IOChannelSender {
+    private readonly commands: readonly IOChannelConsoleCommand[] = [
+        {
+            isApllicableToString: (line: string) => line === '/exit',
+            apply: (_line: string, readlineInstance: readline.Interface) => {
+                readlineInstance.close();
+            },
+        },
+        {
+            isApllicableToString: (line: string) => /^\/user-id\s+[A-Za-z0-9_-]+$/u.test(line),
+            apply: (line: string) => {
+                this.userId = createId(line.split(/\s+/u)[1]);
+            },
+        },
+        {
+            isApllicableToString: (line: string) => /^\/session-id\s+[A-Za-z0-9_-]+$/u.test(line),
+            apply: (line: string) => {
+                this.sessionId = createId(line.split(/\s+/u)[1]);
+            },
+        },
+    ];
+
     constructor(
         private readonly input: Readable = process.stdin,
         private readonly output: Writable = process.stdout,
-        private readonly userId: Id = createId('user'),
         private readonly channelId: Id = createId('storyteller'),
-        private readonly sessionId: Id = createId('session'),
+        private userId: Id = createId('user'),
+        private sessionId: Id = createId('session'),
     ) {}
 
     attachEngine(engine: Engine): void {
         const readlineInstance = this.createReadlineInstance();
-        const inputPlaceholder = this.formatInboundMessage('');
 
-        this.write(inputPlaceholder);
+        this.write(this.formatInboundMessage(''));
 
         readlineInstance.on('line', (line) => {
             this.handleLine(line, readlineInstance, engine);
-            this.write(inputPlaceholder);
+            this.write(this.formatInboundMessage(''));
         });
     }
 
@@ -53,7 +64,7 @@ export class IOChannelConsole implements IOChannelListener, IOChannelSender {
     }
 
     private handleLine(line: string, readlineInstance: readline.Interface, engine: Engine): void {
-        for (const command of IO_CHANNEL_CONSOLE_COMMANDS) {
+        for (const command of this.commands) {
             if (command.isApllicableToString(line)) {
                 command.apply(line, readlineInstance);
                 return;
