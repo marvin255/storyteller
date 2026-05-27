@@ -1,9 +1,8 @@
 {
     "extends": "../tsconfig.json",
     "compilerOptions": {
-        "isolatedModules": false,
-        "module": "nodenext",
-        "moduleResolution": "nodenext",
+        "module": "CommonJS",
+        "moduleResolution": "Node",
         "noEmit": true,
         "rootDir": "..",
         "verbatimModuleSyntax": false,

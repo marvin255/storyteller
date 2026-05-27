@@ -4,9 +4,6 @@ export default {
     '^.+\\.ts$': [
       'ts-jest',
       {
-        diagnostics: {
-          ignoreCodes: [151002],
-        },
         tsconfig: 'tests/tsconfig.json',
       },
     ],
