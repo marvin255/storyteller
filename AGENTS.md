@@ -9,7 +9,7 @@ This project uses the following technologies:
 - **Jest** for unit testing.
 
 
-## Dev environment tips
+## Dev environment
 
 - All development lifecycle commands must be run inside the Docker container.
     - Docker Compose is located at `./docker-compose.yml`
