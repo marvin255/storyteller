@@ -11,8 +11,9 @@ export class IOChannelConsole implements IOChannelListener, IOChannelSender {
     constructor(
         private readonly input: Readable = process.stdin,
         private readonly output: Writable = process.stdout,
-        private readonly sessionId: Id = createId('user'),
-        private readonly applicationId: Id = createId('storyteller'),
+        private readonly userId: Id = createId('user'),
+        private readonly channelId: Id = createId('storyteller'),
+        private readonly sessionId: Id = createId('session'),
     ) {}
 
     attachEngine(engine: Engine): void {
@@ -45,16 +46,16 @@ export class IOChannelConsole implements IOChannelListener, IOChannelSender {
     }
 
     private formatInboundMessage(message: string): string {
-        return this.formatMessage(this.sessionId, message);
+        return this.formatMessage(this.userId, message);
     }
 
     private formatOutboundMessage(message: IOMessageOutbound | string): string {
         const content = typeof message === 'string' ? message : message.content;
-        return this.formatMessage(this.applicationId, content);
+        return this.formatMessage(this.channelId, content);
     }
 
     private formatMessage(sender: string, message: string): string {
-        return `${sender} > ${message}\n`;
+        return `${sender} (${this.sessionId}) > ${message}\n`;
     }
 
     private write(message: string): void {
