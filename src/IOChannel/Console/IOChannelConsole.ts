@@ -14,23 +14,26 @@ export class IOChannelConsole implements IOChannelListener, IOChannelSender {
 
     attachEngine(_engine: Engine): void {
         const readlineInstance = this.createReadlineInstance();
-        this.output.write('storyteller > ');
+        this.write('storyteller > ');
         readlineInstance.on('line', (line) => {
             if (line === '/exit') {
                 readlineInstance.close();
             } else {
-                this.output.write(`You entered: ${line}\n`);
-                this.output.write('storyteller > ');
+                this.write(`You entered: ${line}\n`);
+                this.write('storyteller > ');
             }
         });
     }
 
     send(message: IOMessageOutbound | IOMessageOutbound[]): void {
         const messages = Array.isArray(message) ? message : [message];
-
         for (const outboundMessage of messages) {
-            this.output.write(`${outboundMessage.content}\n`);
+            this.write(`${outboundMessage.content}\n`);
         }
+    }
+
+    private write(message: string): void {
+        this.output.write(message);
     }
 
     private createReadlineInstance(): readline.Interface {
