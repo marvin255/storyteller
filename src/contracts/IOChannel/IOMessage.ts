@@ -1,14 +1,16 @@
+import type { Id } from '../data/Id.js';
+
 /**
  * Base message structure for all I/O communication.
  * Used for both user input and engine output.
  */
 export interface IOMessage {
     /** Unique identifier for this message */
-    id: string;
+    id: Id;
     /** Session/conversation identifier */
-    sessionId: string;
+    sessionId: Id;
     /** User identifier */
-    userId: string;
+    userId: Id;
     /** Message content */
     content: string;
 }
