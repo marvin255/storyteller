@@ -18,6 +18,15 @@ shell: ## Runs shell in container
 install: ## Install all data
 	$(node_container_bin) npm install
 
+install-package: ## Install a single npm package (usage: make install-package LIBRARY=package-name)
+	$(node_container_bin) npm install $(LIBRARY)
+
+install-package-dev: ## Install a single npm package as dev dependency (usage: make install-package-dev LIBRARY=package-name)
+	$(node_container_bin) npm install -D $(LIBRARY)
+
+remove-package: ## Remove a single npm package (usage: make remove-package LIBRARY=package-name)
+	$(node_container_bin) npm uninstall $(LIBRARY)
+
 build: ## Build TS files of the application
 	$(npm_bin) build
 
@@ -28,10 +37,10 @@ watch: install ## Start application in watch mode
 	$(npm_bin) watch
 
 linter: ## Lint code
-	$(npm_bin) lint
+	$(npm_bin) linter
 
 fixer: ## Format code with Prettier
-	$(npm_bin) format
+	$(npm_bin) fixer
 
 test: ## Run tests
 	$(npm_bin) test
@@ -42,5 +51,5 @@ test-coverage: ## Run tests with coverage
 test-watch: ## Run tests in watch mode
 	$(npm_bin) test:watch
 
-validate-change: ## Run validation checks
-	$(npm_bin) validate:change
+verify: ## Run validation checks
+	$(npm_bin) verify

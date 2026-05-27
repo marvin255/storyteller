@@ -5,3 +5,6 @@ dist/
 .env
 .env.local
 *.tsbuildinfo
+.agents/
+.codex/
+.coverage/

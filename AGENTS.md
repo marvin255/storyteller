@@ -1,56 +1,60 @@
 # AGENTS
 
-## Project Technologies
+## Project
 
-This project uses the following technologies:
+- Node.js 24
+- TypeScript
+- Jest
+- ESLint and Prettier
+- Source code lives in `src/`.
+- Unit tests live in `tests/`.
+- Compiled output is written to `dist/`.
 
-- **Node.js 24** as the runtime environment.
-- **TypeScript** for development and type safety.
-- **Jest** for unit testing.
+## Commands
 
+- Run all development lifecycle commands inside the Docker container.
+- Prefer `make` targets when they are available.
+- Use raw Docker commands only when `make` is unavailable or a task is not exposed by the `Makefile`.
+- Docker Compose is configured in `./docker-compose.yml`; the application service is `app`.
+- Raw command pattern:
+  `docker-compose run --rm -u "$(user_id)" "app" npm run {{command}}`
 
-## Dev environment tips
+| Task | Command |
+| --- | --- |
+| Install | `make install` |
+| Add package | `make install-package LIBRARY={{LIBRARY}}` |
+| Add dev package | `make install-package-dev LIBRARY={{LIBRARY}}` |
+| Remove package | `make remove-package LIBRARY={{LIBRARY}}` |
+| Build | `make build` |
+| Fix style | `make fixer` |
+| Lint | `make linter` |
+| Test | `make test` |
+| Coverage | `make test-coverage` |
+| Verify | `make verify` |
+| Shell | `make shell` |
 
-- All development lifecycle commands must be run inside the Docker container.
-    - Docker Compose is located at `./docker-compose.yml`
-    - The PHP container is named `app`
-    - All important commands are defined in package.json, so use the following pattern to run them: `docker-compose run --rm -u "$(user_id)" "app" npm run {{command}}`
-    - Aliases for all commands are also defined in the `Makefile`.
-    - Using `make` is always preferable when it is installed in the current environment.
-- Commands
-    - Install all dependencies
-        - Docker: `docker-compose run --rm -u "$(user_id)" "app" npm install`
-        - Make: `make install`
-    - Build application including ts
-        - Docker: `docker-compose run --rm -u "$(user_id)" "app" npm run build`
-        - Make: `make build`
-    - Fix files so they follow the code style
-        - Docker: `docker-compose run --rm -u "$(user_id)" "app" npm run format`
-        - Make: `make fixer`
-    - Run the linter (static analysis and code style checks)
-        - Docker: `docker-compose run --rm -u "$(user_id)" "app" npm run lint`
-        - Make: `make linter`
-    - Run all tests
-        - Docker: `docker-compose run --rm -u "$(user_id)" "app" npm run test`
-        - Make: `make test`
-    - Run all tests with code coverage
-        - Docker: `docker-compose run --rm -u "$(user_id)" "app" npm run test:coverage`
-        - Make: `make test-coverage`
-    - Run all validations required to verify a single change
-        - Docker: `docker-compose run --rm -u "$(user_id)" "app" npm run validate:change`
-        - Make: `make validate-change`
-    - Start a Bash session in the container environment
-        - Docker: `docker-compose run --rm -u "$(user_id)" "app" /bin/bash`
-        - Make: `make shell`
+## Workflow
 
-## Development workflow
+- Keep changes focused and follow existing project patterns.
+- Add or update Jest tests for behavior changes; production code changes must be covered by unit tests.
+- Avoid new dependencies unless clearly justified. If dependencies change, use the commands above and keep the lockfile in sync.
+- Update `README.md` or other docs when setup, commands, behavior, or public usage changes.
+- Prefer running `make verify` to perform all non-mutating checks in one command.
+- If checking separately, run `make fixer`, then `make linter`, then `make test`.
+- If any verification step fails, stop and fix the issue before continuing.
+- `make fixer` can modify files; inspect the diff afterward before finalizing changes.
 
-- Make the change.
-- Add one or more tests for the change, and update existing tests as needed. All changes must be covered by unit tests.
-- To verify that the change is correct, run the following steps in order. If any step fails, stop and fix the issue before continuing:
-    - Prefer running `make validate-change` to perform all checks in a single command.
-    - Alternatively, run each check separately:
-        - Format the files to match the code style.
-        - Run the linter.
-        - Run all tests.
-- After making the change, update `./README.md` and any other relevant documentation as needed.
+## Code conventions
+
+- Contracts, interfaces, and shared data types live under `src/Contracts/`.
+- Concrete implementations live outside `src/Contracts/`.
+- Use `.js` extensions for local ESM imports in TypeScript files.
+- Create branded values, such as `Id`, through their factory functions instead of direct type assertions outside the defining module.
+- Keep public contracts small and UI-agnostic; put channel-specific behavior in implementation modules.
+
+## Guardrails
+
+- Do not revert or overwrite unrelated user changes.
+- Check the existing diff before making broad edits.
+- Keep unrelated refactors out of task-focused changes.
+- Mention any verification command that was not run.
