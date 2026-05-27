@@ -2,7 +2,7 @@
  * Base message structure for all I/O communication.
  * Used for both user input and engine output.
  */
-export type IOMessage = {
+export interface IOMessage {
     /** Unique identifier for this message */
     id: string;
     /** Session/conversation identifier */
@@ -11,4 +11,4 @@ export type IOMessage = {
     userId: string;
     /** Message content */
     content: string;
-};
+}

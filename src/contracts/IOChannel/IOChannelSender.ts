@@ -1,4 +1,4 @@
-import { IOMessageOutbound } from './IOMessageOutbound.js';
+import type { IOMessageOutbound } from './IOMessageOutbound.js';
 
 /**
  * UI-agnostic interface for sending messages to users.

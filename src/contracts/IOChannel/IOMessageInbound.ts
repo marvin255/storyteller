@@ -1,4 +1,4 @@
-import { IOMessage } from './IOMessage.js';
+import type { IOMessage } from './IOMessage.js';
 
 /**
  * Message from user/UI to the narrative engine.

@@ -1,9 +1,9 @@
 import readline from 'node:readline';
 
-import { Engine } from '../../contracts/Engine/Engine.js';
-import { IOChannelListener } from '../../contracts/IOChannel/IOChannelListener.js';
-import { IOChannelSender } from '../../contracts/IOChannel/IOChannelSender.js';
-import { IOMessageOutbound } from '../../contracts/IOChannel/IOMessageOutbound.js';
+import type { Engine } from '../../contracts/Engine/Engine.js';
+import type { IOChannelListener } from '../../contracts/IOChannel/IOChannelListener.js';
+import type { IOChannelSender } from '../../contracts/IOChannel/IOChannelSender.js';
+import type { IOMessageOutbound } from '../../contracts/IOChannel/IOMessageOutbound.js';
 
 export class IOChannelConsole implements IOChannelListener, IOChannelSender {
     attachEngine(_engine: Engine): void {

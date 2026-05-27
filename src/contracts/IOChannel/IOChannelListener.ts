@@ -1,4 +1,4 @@
-import { Engine } from '../Engine/Engine.js';
+import type { Engine } from '../Engine/Engine.js';
 
 /**
  * UI-agnostic interface for receiving messages from UI and transferring them to the engine.

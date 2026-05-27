@@ -1,4 +1,4 @@
-import { IOMessageInbound } from '../IOChannel/IOMessageInbound.js';
+import type { IOMessageInbound } from '../IOChannel/IOMessageInbound.js';
 
 /**
  * Narrative generator engine - processes user input and produces story responses.
