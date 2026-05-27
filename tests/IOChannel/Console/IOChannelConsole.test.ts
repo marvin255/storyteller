@@ -78,7 +78,7 @@ describe('IOChannelConsole', () => {
             input: process.stdin,
             output: process.stdout,
         });
-        expect(stdoutWrite).toHaveBeenNthCalledWith(1, 'user (session) > \n');
+        expect(stdoutWrite).toHaveBeenNthCalledWith(1, 'console-user (story) > \n');
         expect(stdoutWrite).toHaveBeenNthCalledWith(
             2,
             'storyteller (reply-session) > Default channel response.\n',

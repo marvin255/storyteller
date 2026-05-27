@@ -39,8 +39,8 @@ export class IOChannelConsole implements IOChannelListener, IOChannelSender {
         private readonly input: Readable = process.stdin,
         private readonly output: Writable = process.stdout,
         private readonly channelId: Id = createId('storyteller'),
-        private userId: Id = createId('user'),
-        private sessionId: Id = createId('session'),
+        private userId: Id = createId('console-user'),
+        private sessionId: Id = createId('story'),
     ) {}
 
     attachEngine(engine: Engine): void {
