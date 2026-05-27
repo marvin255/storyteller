@@ -1,6 +1,6 @@
 import { describe, expect, test } from '@jest/globals';
 
-import { createId, type Id } from '../../../src/Contracts/Data/Id.js';
+import { createId, createRandomId, type Id } from '../../../src/Contracts/Data/Id.js';
 
 describe('createId', () => {
     test.each([
@@ -51,4 +51,17 @@ describe('createId', () => {
             expect(() => createId(value)).toThrow(expectedMessage);
         },
     );
+});
+
+describe('createRandomId', () => {
+    test('creates a UUID-based Id', () => {
+        const id: Id = createRandomId();
+
+        expect(typeof id).toBe('string');
+        expect(id).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/u);
+    });
+
+    test('creates unique Id values', () => {
+        expect(createRandomId()).not.toBe(createRandomId());
+    });
 });

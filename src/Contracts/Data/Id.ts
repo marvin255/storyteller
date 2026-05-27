@@ -1,3 +1,5 @@
+import { randomUUID } from 'node:crypto';
+
 declare const idBrand: unique symbol;
 
 export type Id = string & {
@@ -18,4 +20,8 @@ export function createId(value: unknown): Id {
     }
 
     return id as Id;
+}
+
+export function createRandomId(): Id {
+    return createId(randomUUID());
 }

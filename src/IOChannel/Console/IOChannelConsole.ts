@@ -1,8 +1,7 @@
-import { randomUUID } from 'node:crypto';
 import readline from 'node:readline';
 import type { Readable, Writable } from 'node:stream';
 
-import { createId, type Id } from '../../Contracts/Data/Id.js';
+import { createId, createRandomId, type Id } from '../../Contracts/Data/Id.js';
 import type { Engine } from '../../Contracts/Engine/Engine.js';
 import type { IOChannelListener } from '../../Contracts/IOChannel/IOChannelListener.js';
 import type { IOChannelSender } from '../../Contracts/IOChannel/IOChannelSender.js';
@@ -50,7 +49,7 @@ export class IOChannelConsole implements IOChannelListener, IOChannelSender {
 
     private createInboundMessage(message: string): IOMessageInbound {
         return {
-            id: createId(randomUUID()),
+            id: createRandomId(),
             sessionId: this.sessionId,
             userId: this.userId,
             content: message,
