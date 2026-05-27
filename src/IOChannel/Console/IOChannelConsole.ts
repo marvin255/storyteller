@@ -9,26 +9,26 @@ import type { IOMessageInbound } from '../../Contracts/IOChannel/IOMessageInboun
 import type { IOMessageOutbound } from '../../Contracts/IOChannel/IOMessageOutbound.js';
 
 type IOChannelConsoleCommand = Readonly<{
-    isApllicableToString: (line: string) => boolean;
+    isApplicable: (line: string) => boolean;
     apply: (line: string, readlineInstance: readline.Interface) => void;
 }>;
 
 export class IOChannelConsole implements IOChannelListener, IOChannelSender {
     private readonly commands: readonly IOChannelConsoleCommand[] = [
         {
-            isApllicableToString: (line: string) => line === '/exit',
+            isApplicable: (line: string) => line === '/exit',
             apply: (_line: string, readlineInstance: readline.Interface) => {
                 readlineInstance.close();
             },
         },
         {
-            isApllicableToString: (line: string) => /^\/user-id\s+[A-Za-z0-9_-]+$/u.test(line),
+            isApplicable: (line: string) => /^\/user-id\s+[A-Za-z0-9_-]+$/u.test(line),
             apply: (line: string) => {
                 this.userId = createId(line.split(/\s+/u)[1]);
             },
         },
         {
-            isApllicableToString: (line: string) => /^\/session-id\s+[A-Za-z0-9_-]+$/u.test(line),
+            isApplicable: (line: string) => /^\/session-id\s+[A-Za-z0-9_-]+$/u.test(line),
             apply: (line: string) => {
                 this.sessionId = createId(line.split(/\s+/u)[1]);
             },
@@ -50,7 +50,6 @@ export class IOChannelConsole implements IOChannelListener, IOChannelSender {
 
         readlineInstance.on('line', (line) => {
             this.handleLine(line, readlineInstance, engine);
-            this.write(this.formatInboundMessage(''));
         });
     }
 
@@ -64,13 +63,14 @@ export class IOChannelConsole implements IOChannelListener, IOChannelSender {
     }
 
     private handleLine(line: string, readlineInstance: readline.Interface, engine: Engine): void {
+        const trimmedLine = line.trim();
         for (const command of this.commands) {
-            if (command.isApllicableToString(line)) {
-                command.apply(line, readlineInstance);
+            if (command.isApplicable(trimmedLine)) {
+                command.apply(trimmedLine, readlineInstance);
                 return;
             }
         }
-        engine.handle(this.createInboundMessage(line));
+        engine.handle(this.createInboundMessage(trimmedLine));
     }
 
     private createInboundMessage(message: string): IOMessageInbound {
