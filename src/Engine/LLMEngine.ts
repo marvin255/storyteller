@@ -7,13 +7,15 @@ import type { IOMessageOutbound } from '../Contracts/IOChannel/IOMessageOutbound
 export class LLMEngine implements Engine {
     constructor(private readonly sender: IOChannelSender) {}
 
-    handle(message: IOMessageInbound | IOMessageInbound[]): void {
+    handle(message: IOMessageInbound | IOMessageInbound[]): undefined {
         const messages = Array.isArray(message) ? message : [message];
         messages
             .map((inboundMessage) => this.createOutboundMessage(inboundMessage))
             .forEach((outboundMessage) => {
                 this.sender.send(outboundMessage);
             });
+
+        return undefined;
     }
 
     private createOutboundMessage(message: IOMessageInbound): IOMessageOutbound {
