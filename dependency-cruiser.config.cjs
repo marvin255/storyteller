@@ -28,6 +28,19 @@ const implementationBoundaryRules = implementationFolders.flatMap((fromFolder) =
         })),
 );
 
+const contractsBoundaryRules = implementationFolders.map((toFolder) => ({
+    name: `not-from-${CONTRACTS_FOLDER}-to-${toFolder}`,
+    severity: 'error',
+    comment:
+        'Contracts must depend only on npm/node modules and other Contracts files.',
+    from: {
+        path: `^${SOURCE_ROOT}/${CONTRACTS_FOLDER}/`,
+    },
+    to: {
+        path: `^${SOURCE_ROOT}/${toFolder}/`,
+    },
+}));
+
 /** @type {import('dependency-cruiser').IConfiguration} */
 module.exports = {
     forbidden: [
@@ -48,6 +61,7 @@ module.exports = {
             },
         },
         ...implementationBoundaryRules,
+        ...contractsBoundaryRules,
     ],
     options: {
         doNotFollow: {
