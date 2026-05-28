@@ -31,6 +31,8 @@
 | Architecture | `make architecture` |
 | Test | `make test` |
 | Coverage | `make test-coverage` |
+| Mutation testing | `make test-mutation` |
+| Mutation testing dry run | `make test-mutation-dry` |
 | Verify | `make verify` |
 | Shell | `make shell` |
 
@@ -43,6 +45,7 @@
 - Prefer running `make verify` to perform all non-mutating checks in one command.
 - If checking separately, run `make fixer`, then `make linter`, then `make architecture`, then `make test`.
 - If any verification step fails, stop and fix the issue before continuing.
+- Run mutation testing at the very end with `make test-mutation`, only after `make verify` is passing.
 - `make fixer` can modify files; inspect the diff afterward before finalizing changes.
 
 ## Code conventions

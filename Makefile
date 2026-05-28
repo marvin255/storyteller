@@ -51,6 +51,12 @@ test: ## Run tests
 test-coverage: ## Run tests with coverage
 	$(npm_bin) test:coverage
 
+test-mutation: ## Run mutation tests
+	$(npm_bin) test:mutation
+
+test-mutation-dry: ## Validate mutation testing setup without running mutants
+	$(npm_bin) test:mutation:dry
+
 test-watch: ## Run tests in watch mode
 	$(npm_bin) test:watch
 
