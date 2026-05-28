@@ -117,6 +117,48 @@ describe('IOChannelConsole', () => {
         );
     });
 
+    test('treats embedded user id commands as regular input', () => {
+        const { engine, lineHandler } = attachConsole();
+
+        lineHandler('say /user-id next-user');
+
+        expect(engine.handle).toHaveBeenCalledWith(
+            expect.objectContaining({
+                sessionId,
+                userId,
+                content: 'say /user-id next-user',
+            }),
+        );
+    });
+
+    test('treats embedded session id commands as regular input', () => {
+        const { engine, lineHandler } = attachConsole();
+
+        lineHandler('say /session-id next-session');
+
+        expect(engine.handle).toHaveBeenCalledWith(
+            expect.objectContaining({
+                sessionId,
+                userId,
+                content: 'say /session-id next-session',
+            }),
+        );
+    });
+
+    test('treats session id commands with trailing content as regular input', () => {
+        const { engine, lineHandler } = attachConsole();
+
+        lineHandler('/session-id next-session extra');
+
+        expect(engine.handle).toHaveBeenCalledWith(
+            expect.objectContaining({
+                sessionId,
+                userId,
+                content: '/session-id next-session extra',
+            }),
+        );
+    });
+
     test('updates the user id command without forwarding the command to the engine', () => {
         const { engine, lineHandler } = attachConsole();
 
@@ -133,10 +175,42 @@ describe('IOChannelConsole', () => {
         );
     });
 
+    test('updates the user id command when separated by repeated whitespace', () => {
+        const { engine, lineHandler } = attachConsole();
+
+        lineHandler('/user-id   next_user-123');
+        lineHandler('hello');
+
+        expect(engine.handle).toHaveBeenCalledTimes(1);
+        expect(engine.handle).toHaveBeenCalledWith(
+            expect.objectContaining({
+                sessionId,
+                userId: createId('next_user-123'),
+                content: 'hello',
+            }),
+        );
+    });
+
     test('updates the session id command without forwarding the command to the engine', () => {
         const { engine, lineHandler } = attachConsole();
 
         lineHandler('/session-id next_session-123');
+        lineHandler('hello');
+
+        expect(engine.handle).toHaveBeenCalledTimes(1);
+        expect(engine.handle).toHaveBeenCalledWith(
+            expect.objectContaining({
+                sessionId: createId('next_session-123'),
+                userId,
+                content: 'hello',
+            }),
+        );
+    });
+
+    test('updates the session id command when separated by repeated whitespace', () => {
+        const { engine, lineHandler } = attachConsole();
+
+        lineHandler('/session-id   next_session-123');
         lineHandler('hello');
 
         expect(engine.handle).toHaveBeenCalledTimes(1);
