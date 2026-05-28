@@ -28,6 +28,7 @@
 | Build | `make build` |
 | Fix style | `make fixer` |
 | Lint | `make linter` |
+| Architecture | `make architecture` |
 | Test | `make test` |
 | Coverage | `make test-coverage` |
 | Verify | `make verify` |
@@ -40,7 +41,7 @@
 - Avoid new dependencies unless clearly justified. If dependencies change, use the commands above and keep the lockfile in sync.
 - Update `README.md` or other docs when setup, commands, behavior, or public usage changes.
 - Prefer running `make verify` to perform all non-mutating checks in one command.
-- If checking separately, run `make fixer`, then `make linter`, then `make test`.
+- If checking separately, run `make fixer`, then `make linter`, then `make architecture`, then `make test`.
 - If any verification step fails, stop and fix the issue before continuing.
 - `make fixer` can modify files; inspect the diff afterward before finalizing changes.
 

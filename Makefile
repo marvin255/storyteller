@@ -39,6 +39,9 @@ watch: install ## Start application in watch mode
 linter: ## Lint code
 	$(npm_bin) linter
 
+architecture: ## Check architecture dependency boundaries
+	$(npm_bin) architecture
+
 fixer: ## Format code with Prettier
 	$(npm_bin) fixer
 
