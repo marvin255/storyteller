@@ -1,12 +1,12 @@
 import readline from 'node:readline';
 import type { Readable, Writable } from 'node:stream';
 
-import { createId, createRandomId, type Id } from '../../Contracts/Data/Id.js';
 import type { Engine } from '../../Contracts/Engine/Engine.js';
 import type { IOChannelListener } from '../../Contracts/IOChannel/IOChannelListener.js';
 import type { IOChannelSender } from '../../Contracts/IOChannel/IOChannelSender.js';
 import type { IOMessageInbound } from '../../Contracts/IOChannel/IOMessageInbound.js';
 import type { IOMessageOutbound } from '../../Contracts/IOChannel/IOMessageOutbound.js';
+import { createId, createRandomId, type Id } from '../../Contracts/Shared/Id.js';
 
 type IOChannelConsoleCommand = Readonly<{
     isApplicable: (line: string) => boolean;

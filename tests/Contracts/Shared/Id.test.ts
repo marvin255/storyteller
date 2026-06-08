@@ -1,6 +1,6 @@
 import { describe, expect, test } from '@jest/globals';
 
-import { createId, createRandomId, type Id } from '../../../src/Contracts/Data/Id.js';
+import { createId, createRandomId, type Id } from '../../../src/Contracts/Shared/Id.js';
 
 describe('createId', () => {
     test.each([

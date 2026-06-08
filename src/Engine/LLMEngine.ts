@@ -1,8 +1,8 @@
-import { createRandomId } from '../Contracts/Data/Id.js';
 import type { Engine } from '../Contracts/Engine/Engine.js';
 import type { IOChannelSender } from '../Contracts/IOChannel/IOChannelSender.js';
 import type { IOMessageInbound } from '../Contracts/IOChannel/IOMessageInbound.js';
 import type { IOMessageOutbound } from '../Contracts/IOChannel/IOMessageOutbound.js';
+import { createRandomId } from '../Contracts/Shared/Id.js';
 
 export class LLMEngine implements Engine {
     constructor(private readonly sender: IOChannelSender) {}

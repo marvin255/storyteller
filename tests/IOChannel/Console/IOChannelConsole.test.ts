@@ -3,9 +3,9 @@ import { PassThrough, type Readable, type Writable } from 'node:stream';
 
 import { afterEach, describe, expect, jest, test } from '@jest/globals';
 
-import { createId } from '../../../src/Contracts/Data/Id.js';
 import type { Engine } from '../../../src/Contracts/Engine/Engine.js';
 import type { IOMessageInbound } from '../../../src/Contracts/IOChannel/IOMessageInbound.js';
+import { createId } from '../../../src/Contracts/Shared/Id.js';
 import { IOChannelConsole } from '../../../src/IOChannel/Console/IOChannelConsole.js';
 
 type LineHandler = (line: string) => void;
