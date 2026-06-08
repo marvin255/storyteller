@@ -4,10 +4,6 @@ import type { ApplicationConfig } from '../Contracts/Config/ApplicationConfig.js
 
 let configCache: Promise<ApplicationConfig> | undefined = undefined;
 
-//@TODO get rid of chokidar
-//@TODO get rid of giget
-//@TODO get rid of jiti
-//@TDOD move from beta to stable
 export const getApplicationConfig = async (): Promise<ApplicationConfig> => {
     if (configCache !== undefined) {
         return configCache;
