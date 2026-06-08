@@ -12,6 +12,8 @@ export interface Session {
     userId: Id;
     /** The locale used for this session. */
     locale: Locale;
+    /** Description of the story this session is about. */
+    storyDescription: string;
     /** When this session was created. */
     createdAt: DateTime;
     /** When this session was closed, or null while it is still open. */
