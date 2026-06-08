@@ -4,6 +4,9 @@ import type { ApplicationConfig } from '../Contracts/Config/ApplicationConfig.js
 
 let configCache: Promise<ApplicationConfig> | undefined = undefined;
 
+/**
+ * Loads and caches the required Storyteller application config.
+ */
 export const getApplicationConfig = async (): Promise<ApplicationConfig> => {
     if (configCache !== undefined) {
         return configCache;
