@@ -1,3 +1,4 @@
+import type { DateTime } from '../../Shared/DateTime.js';
 import type { Id } from '../../Shared/Id.js';
 import type { Locale } from '../../Shared/Locale.js';
 
@@ -9,8 +10,10 @@ export interface Session {
     id: Id;
     /** The user associated with this session. */
     userId: Id;
-    /** Indicates whether this session is currently active. */
-    isActive: boolean;
     /** The locale used for this session. */
     locale: Locale;
+    /** When this session was created. */
+    createdAt: DateTime;
+    /** When this session was closed, or null while it is still open. */
+    closedAt: DateTime | null;
 }
