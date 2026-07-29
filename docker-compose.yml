@@ -1,13 +1,37 @@
-version: '3.8'
-
 services:
   app:
-    build: .
     container_name: storyteller-app
+    image: storyteller-app
+    networks:
+      - storyteller_network
+    build:
+      context: docker/node
     ports:
-      - "3000:3000"
+      - 3000:3000
     environment:
       - NODE_ENV=development
     volumes:
       - .:/app
-    restart: unless-stopped
+
+  db:
+    container_name: storyteller-db
+    image: storyteller-db
+    networks:
+      - storyteller_network
+    build:
+      context: docker/postgres
+    ports:
+      - 5432:5432
+    volumes:
+      - storyteller_database:/var/lib/postgresql/data
+    environment:
+      POSTGRES_USER: storyteller_user
+      POSTGRES_PASSWORD: storyteller_password
+      POSTGRES_DB: storyteller_db
+      PGDATA: /var/lib/postgresql/data/pgdata
+
+volumes:
+  storyteller_database:
+
+networks:
+  storyteller_network:
