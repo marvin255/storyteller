@@ -7,7 +7,4 @@ import type { Session } from './Session.js';
 export interface SessionRepository {
     /** Find a session by its unique identifier. */
     findSessionById(id: Id): Promise<Session | null>;
-
-    /** Find the user's currently active session, if one exists. */
-    findActiveSessionForUser(userId: Id): Promise<Session | null>;
 }

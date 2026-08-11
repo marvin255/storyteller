@@ -8,8 +8,6 @@ import type { Locale } from '../../Shared/Locale.js';
 export interface Session {
     /** Unique identifier for this session. */
     id: Id;
-    /** The user associated with this session. */
-    userId: Id;
     /** The locale used for this session. */
     locale: Locale;
     /** Description of the story this session is about. */
