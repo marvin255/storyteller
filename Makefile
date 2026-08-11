@@ -45,6 +45,9 @@ build: ## Build TS files of the application
 start: ## Start application
 	$(npm_bin) start
 
+migrate: ## Run all pending database migrations
+	$(npm_bin) migrate
+
 watch: install ## Start application in watch mode
 	$(npm_bin) watch
 

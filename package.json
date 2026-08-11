@@ -10,6 +10,7 @@
   "scripts": {
     "build": "tsc",
     "start": "node dist/index.js",
+    "migrate": "tsc && node dist/migrate.js",
     "dev": "tsc && node dist/index.js",
     "watch": "tsc --watch",
     "eslint": "eslint \"src/**/*.ts\" \"tests/**/*.ts\"",
@@ -46,6 +47,7 @@
     "typescript": "^6.0.3"
   },
   "dependencies": {
+    "@types/pg": "^8.21.0",
     "c12": "^3.3.4",
     "kysely": "^0.29.2",
     "pg": "^8.22.0"

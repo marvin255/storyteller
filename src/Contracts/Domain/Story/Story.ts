@@ -5,15 +5,15 @@ import type { Locale } from '../../Shared/Locale.js';
 /**
  * Conversation context that groups user input and engine output.
  */
-export interface Session {
-    /** Unique identifier for this session. */
+export interface Story {
+    /** Unique identifier for this story. */
     id: Id;
-    /** The locale used for this session. */
+    /** The locale used for this story. */
     locale: Locale;
-    /** Description of the story this session is about. */
+    /** Description of the story this story is about. */
     storyDescription: string;
-    /** When this session was created. */
+    /** When this story was created. */
     createdAt: DateTime;
-    /** When this session was closed, or null while it is still open. */
+    /** When this story was closed, or null while it is still open. */
     closedAt: DateTime | null;
 }
