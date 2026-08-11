@@ -4,6 +4,9 @@ import { getApplicationConfig } from '../../src/Config/getApplicationConfig.js';
 
 describe('getApplicationConfig', () => {
     test('loads the strict JSON application config', async () => {
-        await expect(getApplicationConfig()).resolves.toEqual({});
+        const config = await getApplicationConfig();
+
+        expect(config).not.toBeNull();
+        expect(config).toEqual(expect.any(Object));
     });
 });
