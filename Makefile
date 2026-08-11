@@ -2,7 +2,7 @@
 
 user_id := $(shell id -u)
 docker_compose_bin := docker compose
-node_container_bin := $(docker_compose_bin) run --rm -u "$(user_id)" "app"
+node_container_bin := $(docker_compose_bin) exec -u "$(user_id)" "app"
 npm_bin := $(node_container_bin) npm run
 
 .DEFAULT_GOAL := build
