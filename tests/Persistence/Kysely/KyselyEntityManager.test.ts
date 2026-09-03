@@ -11,17 +11,29 @@ interface TestRepository {
 }
 
 const createEntityManager = () => {
-    const db = {} as Kysely<KyselyDatabase>;
+    const destroy = jest.fn(() => Promise.resolve());
+    const db = {
+        destroy,
+    } as unknown as Kysely<KyselyDatabase>;
     const config: ApplicationConfig = {} as ApplicationConfig;
 
     return {
         db,
+        destroy,
         config,
         entityManager: new KyselyEntityManager(db, config),
     };
 };
 
 describe('KyselyEntityManager', () => {
+    test('destroys the database when closed', async () => {
+        const { destroy, entityManager } = createEntityManager();
+
+        await entityManager.close();
+
+        expect(destroy).toHaveBeenCalledTimes(1);
+    });
+
     test('throws when no factory is registered for a token', () => {
         const { entityManager } = createEntityManager();
         const token = repositoryToken<TestRepository>('TestRepository');

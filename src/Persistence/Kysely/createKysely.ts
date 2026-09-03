@@ -4,7 +4,10 @@ import { Pool } from 'pg';
 import type { ApplicationConfig } from '../../Contracts/Config/ApplicationConfig.js';
 import type { KyselyDatabase } from './KyselyDatabase.js';
 
-export function createKysely(config: ApplicationConfig) {
+/**
+ * Creates a Kysely instance configured for PostgreSQL using the provided application configuration.
+ */
+export function createKysely(config: ApplicationConfig): Kysely<KyselyDatabase> {
     if (config.database === undefined) {
         throw new Error('Database configuration is missing in the application config.');
     }

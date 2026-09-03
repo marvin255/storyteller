@@ -42,6 +42,13 @@ export class KyselyEntityManager implements EntityManager {
     }
 
     /**
+     * Closes the EntityManager and releases any resources it holds, such as database connections.
+     */
+    async close(): Promise<void> {
+        await this.db.destroy();
+    }
+
+    /**
      * Registers a repository factory for the given token.
      * Throws an error if a factory is already registered for the token.
      */
