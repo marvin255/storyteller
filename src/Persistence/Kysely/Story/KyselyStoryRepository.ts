@@ -21,12 +21,13 @@ const convertKyselyToDomain = (kyselyStory: KyselyStory): Story => {
 export class KyselyStoryRepository implements StoryRepository {
     constructor(private db: Kysely<KyselyDatabase>) {}
 
-    findStoryById(id: Id): Promise<Story | null> {
-        return this.db
+    async findStoryById(id: Id): Promise<Story | null> {
+        const row = await this.db
             .selectFrom(STORY_TABLE)
             .selectAll()
             .where('id', '=', id)
-            .executeTakeFirst()
-            .then((row) => (row ? convertKyselyToDomain(row) : null));
+            .executeTakeFirst();
+
+        return row ? convertKyselyToDomain(row) : null;
     }
 }
