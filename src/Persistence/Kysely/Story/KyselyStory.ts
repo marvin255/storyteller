@@ -1,5 +1,11 @@
-import type { Id } from '../../../Contracts/Shared/Id.js';
+import type { Insertable, Selectable, Updateable } from 'kysely';
 
 export interface StoryTable {
-    id: Id;
+    id: string;
 }
+
+export type KyselyStory = Selectable<StoryTable>;
+export type NewKyselyStory = Insertable<StoryTable>;
+export type KyselyStoryUpdate = Updateable<StoryTable>;
+
+export const STORY_TABLE = 'story';

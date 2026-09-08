@@ -1,5 +1,5 @@
-import type { StoryTable } from './Story/KyselyStory.js';
+import type { STORY_TABLE, StoryTable } from './Story/KyselyStory.js';
 
 export interface KyselyDatabase {
-    story: StoryTable;
+    [STORY_TABLE]: StoryTable;
 }

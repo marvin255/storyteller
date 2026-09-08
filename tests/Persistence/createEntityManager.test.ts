@@ -1,15 +1,15 @@
 import { describe, expect, jest, test } from '@jest/globals';
 
 import type { ApplicationConfig } from '../../src/Contracts/Config/ApplicationConfig.js';
-import type { EntityManager } from '../../src/Contracts/Persistence/EntityManager.js';
 import type { RepositoryToken } from '../../src/Contracts/Persistence/RepositoryToken.js';
 
 const database = { name: 'database' };
-const entityManager: EntityManager = {
+const entityManager = {
     close: jest.fn(() => Promise.resolve()),
     getRepository: <T>(_token: RepositoryToken<T>): Promise<T> => {
         throw new Error('Not implemented by this test double.');
     },
+    registerRepository: jest.fn(),
 };
 const createKysely = jest.fn((_config: ApplicationConfig) => database);
 const KyselyEntityManager = jest.fn(
