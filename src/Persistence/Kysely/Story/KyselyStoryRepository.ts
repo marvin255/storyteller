@@ -8,6 +8,9 @@ import { createLocale } from '../../../Contracts/Shared/Locale.js';
 import type { KyselyDatabase } from '../KyselyDatabase.js';
 import { type KyselyStory, STORY_TABLE } from './KyselyStory.js';
 
+/**
+ * Converts a KyselyStory entity to a domain Story entity.
+ */
 const convertKyselyToDomain = (kyselyStory: KyselyStory): Story => {
     return {
         id: createId(kyselyStory.id),
@@ -18,6 +21,9 @@ const convertKyselyToDomain = (kyselyStory: KyselyStory): Story => {
     };
 };
 
+/**
+ * A Kysely-based implementation of the StoryRepository interface.
+ */
 export class KyselyStoryRepository implements StoryRepository {
     constructor(private db: Kysely<KyselyDatabase>) {}
 
