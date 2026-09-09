@@ -6,5 +6,5 @@ import type { Prompt } from './Prompt.js';
  */
 export interface PromptFactory {
     /** Creates a prompt that can be sent to a language model (LLM) */
-    createPrompt(code: string, data?: Record<string, unknown>, locale?: Locale): Promise<Prompt>;
+    createPrompt(code: string, data: Record<string, unknown>, locale?: Locale): Promise<Prompt>;
 }
