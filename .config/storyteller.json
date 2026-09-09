@@ -1,0 +1,9 @@
+{
+    "database": {
+        "host": "db",
+        "port": 5432,
+        "user": "storyteller_user",
+        "password": "storyteller_password",
+        "database": "storyteller_db"
+    }
+}

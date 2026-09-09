@@ -1,8 +1,8 @@
 #!/usr/bin/make
 
 user_id := $(shell id -u)
-docker_compose_bin := $(shell command -v docker-compose 2> /dev/null)
-node_container_bin := $(docker_compose_bin) run --rm -u "$(user_id)" "app"
+docker_compose_bin := docker compose
+node_container_bin := $(docker_compose_bin) exec -u "$(user_id)" "app"
 npm_bin := $(node_container_bin) npm run
 
 .DEFAULT_GOAL := build
@@ -11,6 +11,18 @@ npm_bin := $(node_container_bin) npm run
 
 docker-build: ## Build docker container
 	$(docker_compose_bin) build --force-rm
+
+docker-up: ## Start containers
+	$(docker_compose_bin) up -d --remove-orphans
+
+docker-down: ## Stop containers
+	$(docker_compose_bin) down
+
+docker-restart: ## Stop containers
+	$(docker_compose_bin) restart
+
+docker-logs: ## Stop containers
+	$(docker_compose_bin) logs -f
 
 shell: ## Runs shell in container
 	$(node_container_bin) /bin/bash
@@ -33,11 +45,17 @@ build: ## Build TS files of the application
 start: ## Start application
 	$(npm_bin) start
 
+migrate: ## Run all pending database migrations
+	$(npm_bin) migrate
+
 watch: install ## Start application in watch mode
 	$(npm_bin) watch
 
 linter: ## Lint code
 	$(npm_bin) linter
+
+architecture: ## Check architecture dependency boundaries
+	$(npm_bin) architecture
 
 fixer: ## Format code with Prettier
 	$(npm_bin) fixer
@@ -47,6 +65,12 @@ test: ## Run tests
 
 test-coverage: ## Run tests with coverage
 	$(npm_bin) test:coverage
+
+test-mutation: ## Run mutation tests
+	$(npm_bin) test:mutation
+
+test-mutation-dry: ## Validate mutation testing setup without running mutants
+	$(npm_bin) test:mutation:dry
 
 test-watch: ## Run tests in watch mode
 	$(npm_bin) test:watch

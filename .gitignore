@@ -8,3 +8,5 @@ dist/
 .agents/
 .codex/
 .coverage/
+.stryker-tmp/
+reports/
