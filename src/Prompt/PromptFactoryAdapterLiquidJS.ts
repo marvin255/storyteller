@@ -1,4 +1,4 @@
-import { access } from 'node:fs/promises';
+import { realpath } from 'node:fs/promises';
 import path from 'node:path';
 
 import type { Liquid } from 'liquidjs';
@@ -20,13 +20,35 @@ export class PromptFactoryAdapterLiquidJS implements PromptFactoryAdapter {
         return String(rendered);
     }
 
-    /** Checks if a template with the given name exists. Use rootFolder to determine the base path for template files. */
+    /** Checks if a template exists within rootFolder, returning false for paths or symlinks that escape it. */
     async doesTemplateExist(templateName: string): Promise<boolean> {
+        if (path.isAbsolute(templateName)) {
+            return false;
+        }
+
+        const rootPath = path.resolve(this.rootFolder);
+        const templatePath = path.resolve(rootPath, `${templateName}.liquid`);
+        if (!this.isWithinRoot(rootPath, templatePath)) {
+            return false;
+        }
+
         try {
-            await access(path.join(this.rootFolder, `${templateName}.liquid`));
-            return true;
+            const realRootPath = await realpath(rootPath);
+            const realTemplatePath = await realpath(templatePath);
+            return this.isWithinRoot(realRootPath, realTemplatePath);
         } catch {
             return false;
         }
+    }
+
+    /** Checks containment by path segments, including when the root is a filesystem root. */
+    private isWithinRoot(rootPath: string, templatePath: string): boolean {
+        const relativePath = path.relative(rootPath, templatePath);
+        return (
+            relativePath !== '' &&
+            relativePath !== '..' &&
+            !relativePath.startsWith(`..${path.sep}`) &&
+            !path.isAbsolute(relativePath)
+        );
     }
 }
