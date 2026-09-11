@@ -8,4 +8,6 @@ export type ApplicationConfig = Readonly<{
               database: string;
           }
         | undefined;
+    defaultLocale: string;
+    promptDirectory: string;
 }>;
