@@ -51,7 +51,12 @@ export class IOChannelConsole implements IOChannelListener, IOChannelSender {
         this.writetMessagePlaceholder();
 
         readlineInstance.on('line', (line) => {
-            this.handleLine(line, readlineInstance, engine);
+            this.handleLine(line, readlineInstance, engine).catch((error: unknown) => {
+                this.write(
+                    `Error handling line: ${error instanceof Error ? error.message : String(error)}\n`,
+                );
+                this.writetMessagePlaceholder();
+            });
         });
     }
 
@@ -65,7 +70,11 @@ export class IOChannelConsole implements IOChannelListener, IOChannelSender {
         this.writetMessagePlaceholder();
     }
 
-    private handleLine(line: string, readlineInstance: readline.Interface, engine: Engine): void {
+    private async handleLine(
+        line: string,
+        readlineInstance: readline.Interface,
+        engine: Engine,
+    ): Promise<void> {
         const trimmedLine = line.trim();
         for (const command of this.commands) {
             if (command.isApplicable(trimmedLine)) {
@@ -73,7 +82,7 @@ export class IOChannelConsole implements IOChannelListener, IOChannelSender {
                 return;
             }
         }
-        engine.handle(this.createInboundMessage(trimmedLine));
+        await engine.handle(this.createInboundMessage(trimmedLine));
     }
 
     private createInboundMessage(message: string): IOMessageInbound {

@@ -5,5 +5,5 @@ import type { IOMessageInbound } from '../IOChannel/IOMessageInbound.js';
  */
 export interface Engine {
     /** Handle incoming messages from UI and generate narrative responses */
-    handle(message: IOMessageInbound | IOMessageInbound[]): undefined;
+    handle(message: IOMessageInbound | IOMessageInbound[]): Promise<void>;
 }
