@@ -10,4 +10,9 @@ export type ApplicationConfig = Readonly<{
         | undefined;
     defaultLocale: string;
     promptDirectory: string;
+    llm?: {
+        provider: string;
+        model: string;
+        apiKey?: string;
+    };
 }>;
