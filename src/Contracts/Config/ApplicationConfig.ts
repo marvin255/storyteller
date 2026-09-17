@@ -1,16 +1,16 @@
 export type ApplicationConfig = Readonly<{
     defaultLocale: string;
-    database?: {
+    database?: Readonly<{
         host: string;
         port: number;
         user: string;
         password: string;
         database: string;
-    };
+    }>;
     promptDirectory: string;
-    llm?: {
+    llm?: Readonly<{
         provider: string;
         model: string;
         apiKey?: string;
-    };
+    }>;
 }>;
