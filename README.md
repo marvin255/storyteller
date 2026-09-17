@@ -7,6 +7,10 @@ make test
 make verify
 ```
 
+TypeScript uses `skipLibCheck` because the AI SDK's declaration files reference browser
+types and contain types incompatible with `exactOptionalPropertyTypes`. This skips
+checking `.d.ts` files while keeping strict checking enabled for application code.
+
 Run pending database migrations with `make migrate`. To revert every applied migration and
 then migrate back to the latest version, pass the refresh flag directly to the migration script:
 

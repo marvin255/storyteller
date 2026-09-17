@@ -47,7 +47,11 @@
     "typescript": "^6.0.3"
   },
   "dependencies": {
+    "@ai-sdk/anthropic": "^4.0.54",
+    "@ai-sdk/google": "^4.0.72",
+    "@ai-sdk/openai": "^4.0.67",
     "@types/pg": "^8.21.0",
+    "ai": "^7.0.102",
     "c12": "^3.3.4",
     "kysely": "^0.29.2",
     "liquidjs": "^10.29.0",
