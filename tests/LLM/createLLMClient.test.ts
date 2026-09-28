@@ -19,11 +19,8 @@ jest.unstable_mockModule('../../src/LLM/AISDKLLMClient.js', () => ({ AISDKLLMCli
 
 const { createLLMClient } = await import('../../src/LLM/createLLMClient.js');
 
-const config: ApplicationConfig = {
-    database: undefined,
-    defaultLocale: 'en-US',
-    promptDirectory: '/templates/prompts',
-};
+// Each test supplies only the LLM settings used by the factory.
+const config = {} as ApplicationConfig;
 const providers = [
     { provider: 'openai', createProvider: createOpenAI },
     { provider: 'anthropic', createProvider: createAnthropic },

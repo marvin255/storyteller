@@ -30,11 +30,11 @@ jest.unstable_mockModule('../../src/Prompt/PromptFactoryImpl.js', () => ({ Promp
 
 const { createPromptFactory } = await import('../../src/Prompt/createPromptFactory.js');
 
-const config: ApplicationConfig = {
-    database: undefined,
+// Supply only the config fields used by the factory.
+const config = {
     defaultLocale: 'en-us',
     promptDirectory: '/templates/prompts',
-};
+} as ApplicationConfig;
 
 describe('createPromptFactory', () => {
     beforeEach(() => {

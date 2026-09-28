@@ -24,7 +24,8 @@ jest.unstable_mockModule('../../src/Persistence/Kysely/KyselyEntityManager.js', 
 
 const { createEntityManager } = await import('../../src/Persistence/createEntityManager.js');
 
-const config = { database: undefined } as ApplicationConfig;
+// The mocked dependencies only receive this config; they never read its fields.
+const config = {} as ApplicationConfig;
 
 describe('createEntityManager', () => {
     test('creates a Kysely entity manager with the configured database', async () => {
