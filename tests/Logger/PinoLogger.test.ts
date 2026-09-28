@@ -1,14 +1,18 @@
 import { beforeEach, describe, expect, jest, test } from '@jest/globals';
-import type { Logger as Pino } from 'pino';
+import type { Bindings, Logger as Pino } from 'pino';
 
-const createPino = () =>
-    ({
+const createPino = () => {
+    const delegate = {
         debug: jest.fn<Pino['debug']>(),
         info: jest.fn<Pino['info']>(),
         warn: jest.fn<Pino['warn']>(),
         error: jest.fn<Pino['error']>(),
-        child: jest.fn<Pino['child']>(),
-    }) as jest.Mocked<Pino>;
+        child: jest.fn<(bindings: Bindings) => Pino>(),
+    };
+
+    // Only the Pino methods used by the adapter are needed in this test double.
+    return delegate as unknown as Pino & typeof delegate;
+};
 
 const pino = jest.fn<() => Pino>();
 
