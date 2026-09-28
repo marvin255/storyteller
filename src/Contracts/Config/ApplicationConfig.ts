@@ -13,4 +13,7 @@ export type ApplicationConfig = Readonly<{
         model: string;
         apiKey?: string;
     }>;
+    logging?: Readonly<{
+        minLevel?: string;
+    }>;
 }>;
