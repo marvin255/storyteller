@@ -100,6 +100,7 @@ describe('IOChannelConsole', () => {
             sessionId,
             userId,
             content: 'create a quiet forest scene',
+            createdAt: expect.any(Date),
         });
     });
 

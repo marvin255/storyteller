@@ -91,6 +91,7 @@ export class IOChannelConsole implements IOChannelListener, IOChannelSender {
             sessionId: this.sessionId,
             userId: this.userId,
             content: message,
+            createdAt: new Date(),
         };
     }
 
