@@ -32,6 +32,27 @@ const filterDuplicateMessages = (
     });
 };
 
+/* Filter messages to only include those with the same sessionId as the first message */
+const filterSameSessionOnlyMessages = (
+    messages: IOMessageInbound[],
+    logger?: Logger,
+): IOMessageInbound[] => {
+    const expectedSessionId = messages[0]?.sessionId;
+    if (!expectedSessionId) {
+        return [];
+    }
+    const filteredMessages = messages.filter((msg) => {
+        if (msg.sessionId !== expectedSessionId) {
+            logger?.warn(
+                `Message with id: ${msg.id} has a different sessionId: ${msg.sessionId} than expected: ${expectedSessionId}`,
+            );
+            return false;
+        }
+        return true;
+    });
+    return filteredMessages;
+};
+
 /* Sort messages by their createdAt timestamp in ascending order */
 const sortMessagesByDate = (messages: IOMessageInbound[]): IOMessageInbound[] => {
     return messages.sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
@@ -49,6 +70,7 @@ export const sanitizeMessageArray = (
     let messagesArray = makeSureIsArray(message);
     messagesArray = filterNullMessages(messagesArray, logger);
     messagesArray = filterDuplicateMessages(messagesArray, logger);
+    messagesArray = filterSameSessionOnlyMessages(messagesArray, logger);
     messagesArray = sortMessagesByDate(messagesArray);
     return messagesArray;
 };
