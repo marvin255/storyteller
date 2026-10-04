@@ -60,8 +60,14 @@ architecture: ## Check architecture dependency boundaries
 fixer: ## Format code with Prettier
 	$(npm_bin) fixer
 
-test: ## Run tests
+test: ## Run unit and integration tests
 	$(npm_bin) test
+
+test-unit: ## Run unit tests
+	$(npm_bin) test:unit
+
+test-integration: ## Run repository tests against PostgreSQL
+	$(npm_bin) test:integration
 
 test-coverage: ## Run tests with coverage
 	$(npm_bin) test:coverage
