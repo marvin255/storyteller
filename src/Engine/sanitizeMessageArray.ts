@@ -7,13 +7,9 @@ const makeSureIsArray = (message: IOMessageInbound | IOMessageInbound[]): IOMess
 };
 
 /* Filter out null or undefined messages from the array */
-const filterNullMessages = (messages: IOMessageInbound[], logger?: Logger): IOMessageInbound[] => {
+const filterNullMessages = (messages: IOMessageInbound[]): IOMessageInbound[] => {
     // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-    const filteredMessages = messages.filter((msg) => msg !== null && msg !== undefined);
-    if (filteredMessages.length === 0) {
-        logger?.warn('Received an empty message array');
-    }
-    return filteredMessages;
+    return messages.filter((msg) => msg !== null && msg !== undefined);
 };
 
 /* Filter out duplicate messages based on their id */
@@ -24,7 +20,7 @@ const filterDuplicateMessages = (
     const seen = new Set();
     return messages.filter((item) => {
         if (seen.has(item.id)) {
-            logger?.warn(`Duplicate message detected with id: ${item.id}`);
+            logger?.warn('Duplicate message detected', { id: item.id });
             return false;
         }
         seen.add(item.id);
@@ -43,9 +39,11 @@ const filterSameSessionOnlyMessages = (
     }
     const filteredMessages = messages.filter((msg) => {
         if (msg.sessionId !== expectedSessionId) {
-            logger?.warn(
-                `Message with id: ${msg.id} has a different sessionId: ${msg.sessionId} than expected: ${expectedSessionId}`,
-            );
+            logger?.warn('Message has a different sessionId', {
+                id: msg.id,
+                sessionId: msg.sessionId,
+                expectedSessionId,
+            });
             return false;
         }
         return true;
@@ -68,7 +66,7 @@ export const sanitizeMessageArray = (
     logger?: Logger,
 ): IOMessageInbound[] => {
     let messagesArray = makeSureIsArray(message);
-    messagesArray = filterNullMessages(messagesArray, logger);
+    messagesArray = filterNullMessages(messagesArray);
     messagesArray = filterDuplicateMessages(messagesArray, logger);
     messagesArray = filterSameSessionOnlyMessages(messagesArray, logger);
     messagesArray = sortMessagesByDate(messagesArray);

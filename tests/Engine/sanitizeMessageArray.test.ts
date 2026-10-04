@@ -49,7 +49,7 @@ describe('sanitizeMessageArray', () => {
             other,
             original,
         ]);
-        expect(warn.mock.calls).toEqual([['Duplicate message detected with id: same']]);
+        expect(warn.mock.calls).toEqual([['Duplicate message detected', { id: original.id }]]);
     });
 
     test('filters null and undefined entries from runtime input', () => {
@@ -61,12 +61,12 @@ describe('sanitizeMessageArray', () => {
         expect(warn).not.toHaveBeenCalled();
     });
 
-    test('warns when no messages remain after filtering', () => {
+    test('returns an empty array without warning when no messages remain after filtering', () => {
         const { logger, warn } = createLogger();
         const input = [null, undefined] as unknown as IOMessageInbound[];
 
         expect(sanitizeMessageArray(input, logger)).toEqual([]);
-        expect(warn.mock.calls).toEqual([['Received an empty message array']]);
+        expect(warn).not.toHaveBeenCalled();
     });
 
     test('handles an empty array without a logger', () => {
@@ -85,10 +85,20 @@ describe('sanitizeMessageArray', () => {
         expect(input).toEqual([null, first, other, matching, another]);
         expect(warn.mock.calls).toEqual([
             [
-                'Message with id: other has a different sessionId: session-two than expected: session-one',
+                'Message has a different sessionId',
+                {
+                    id: other.id,
+                    sessionId: other.sessionId,
+                    expectedSessionId: first.sessionId,
+                },
             ],
             [
-                'Message with id: another has a different sessionId: session-three than expected: session-one',
+                'Message has a different sessionId',
+                {
+                    id: another.id,
+                    sessionId: another.sessionId,
+                    expectedSessionId: first.sessionId,
+                },
             ],
         ]);
     });
@@ -123,9 +133,14 @@ describe('sanitizeMessageArray', () => {
 
         expect(sanitizeMessageArray([first, other, duplicate], logger)).toEqual([first]);
         expect(warn.mock.calls).toEqual([
-            ['Duplicate message detected with id: same'],
+            ['Duplicate message detected', { id: duplicate.id }],
             [
-                'Message with id: same has a different sessionId: session-two than expected: session-one',
+                'Message has a different sessionId',
+                {
+                    id: other.id,
+                    sessionId: other.sessionId,
+                    expectedSessionId: first.sessionId,
+                },
             ],
         ]);
     });
