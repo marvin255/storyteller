@@ -21,7 +21,7 @@ export class LLMEngine implements Engine {
     private createOutboundMessage(message: IOMessageInbound): IOMessageOutbound {
         return {
             id: createRandomId(),
-            sessionId: message.sessionId,
+            externalId: message.externalId,
             userId: message.userId,
             content: `LLM response placeholder: ${message.content}`,
         };

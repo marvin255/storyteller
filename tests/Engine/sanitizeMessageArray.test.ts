@@ -8,10 +8,10 @@ import { sanitizeMessageArray } from '../../src/Engine/sanitizeMessageArray.js';
 const createMessage = (
     id: string,
     createdAt: string,
-    sessionId = 'session-one',
+    externalId = 'session-one',
 ): IOMessageInbound => ({
     id: createId(id),
-    sessionId: createId(sessionId),
+    externalId: createId(externalId),
     userId: createId('user-one'),
     content: `Message ${id}`,
     createdAt: new Date(createdAt),
@@ -73,7 +73,7 @@ describe('sanitizeMessageArray', () => {
         expect(sanitizeMessageArray([])).toEqual([]);
     });
 
-    test('uses the first non-null message session before sorting and warns for each mismatch', () => {
+    test('uses the first non-null message externalId before sorting and warns for each mismatch', () => {
         const first = createMessage('first', '2026-01-03T00:00:00.000Z');
         const other = createMessage('other', '2026-01-01T00:00:00.000Z', 'session-two');
         const matching = createMessage('matching', '2026-01-02T00:00:00.000Z');
@@ -85,25 +85,25 @@ describe('sanitizeMessageArray', () => {
         expect(input).toEqual([null, first, other, matching, another]);
         expect(warn.mock.calls).toEqual([
             [
-                'Message has a different sessionId',
+                'Message has a different externalId',
                 {
                     id: other.id,
-                    sessionId: other.sessionId,
-                    expectedSessionId: first.sessionId,
+                    externalId: other.externalId,
+                    expectedExternalId: first.externalId,
                 },
             ],
             [
-                'Message has a different sessionId',
+                'Message has a different externalId',
                 {
                     id: another.id,
-                    sessionId: another.sessionId,
-                    expectedSessionId: first.sessionId,
+                    externalId: another.externalId,
+                    expectedExternalId: first.externalId,
                 },
             ],
         ]);
     });
 
-    test('filters messages from other sessions without a logger', () => {
+    test('filters messages from other external IDs without a logger', () => {
         const first = createMessage('first', '2026-01-01T00:00:00.000Z');
         const other = createMessage('other', '2026-01-02T00:00:00.000Z', 'session-two');
 
@@ -111,11 +111,11 @@ describe('sanitizeMessageArray', () => {
     });
 
     test.each([undefined, null, ''])(
-        'returns no messages when the first sessionId is %p',
-        (sessionId) => {
+        'returns no messages when the first externalId is %p',
+        (externalId) => {
             const invalid = {
                 ...createMessage('invalid', '2026-01-01T00:00:00.000Z'),
-                sessionId,
+                externalId,
             } as unknown as IOMessageInbound;
             const valid = createMessage('valid', '2026-01-02T00:00:00.000Z');
             const { logger, warn } = createLogger();
@@ -125,7 +125,7 @@ describe('sanitizeMessageArray', () => {
         },
     );
 
-    test('removes duplicates before filtering sessions', () => {
+    test('removes duplicates before filtering external IDs', () => {
         const first = createMessage('first', '2026-01-01T00:00:00.000Z');
         const other = createMessage('same', '2026-01-02T00:00:00.000Z', 'session-two');
         const duplicate = createMessage('same', '2026-01-03T00:00:00.000Z');
@@ -135,11 +135,11 @@ describe('sanitizeMessageArray', () => {
         expect(warn.mock.calls).toEqual([
             ['Duplicate message detected', { id: duplicate.id }],
             [
-                'Message has a different sessionId',
+                'Message has a different externalId',
                 {
                     id: other.id,
-                    sessionId: other.sessionId,
-                    expectedSessionId: first.sessionId,
+                    externalId: other.externalId,
+                    expectedExternalId: first.externalId,
                 },
             ],
         ]);

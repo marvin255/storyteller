@@ -31,7 +31,7 @@ export class IOChannelConsole implements IOChannelListener, IOChannelSender {
         {
             isApplicable: (line: string) => /^\/session-id\s+[A-Za-z0-9_-]+$/u.test(line),
             apply: (line: string) => {
-                this.sessionId = createId(line.split(/\s+/u)[1]);
+                this.externalId = createId(line.split(/\s+/u)[1]);
                 this.writetMessagePlaceholder();
             },
         },
@@ -42,7 +42,7 @@ export class IOChannelConsole implements IOChannelListener, IOChannelSender {
         private readonly output: Writable = process.stdout,
         private readonly channelId: Id = createId('storyteller'),
         private userId: Id = createId('console-user'),
-        private sessionId: Id = createId('story'),
+        private externalId: Id = createId('story'),
     ) {}
 
     attachEngine(engine: Engine): void {
@@ -88,7 +88,7 @@ export class IOChannelConsole implements IOChannelListener, IOChannelSender {
     private createInboundMessage(message: string): IOMessageInbound {
         return {
             id: createRandomId(),
-            sessionId: this.sessionId,
+            externalId: this.externalId,
             userId: this.userId,
             content: message,
             createdAt: new Date(),
@@ -96,15 +96,15 @@ export class IOChannelConsole implements IOChannelListener, IOChannelSender {
     }
 
     private formatOutboundMessage(message: IOMessageOutbound): string {
-        return this.formatMessage(this.channelId, message.sessionId, message.content);
+        return this.formatMessage(this.channelId, message.externalId, message.content);
     }
 
-    private formatMessage(sender: string, sessionId: string, message: string): string {
-        return `${sender} (${sessionId}) > ${message}\n`;
+    private formatMessage(sender: string, externalId: string, message: string): string {
+        return `${sender} (${externalId}) > ${message}\n`;
     }
 
     private writetMessagePlaceholder(): void {
-        this.write(`${this.userId} (${this.sessionId}) > `);
+        this.write(`${this.userId} (${this.externalId}) > `);
     }
 
     private write(message: string): void {

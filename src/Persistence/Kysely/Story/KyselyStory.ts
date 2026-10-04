@@ -1,9 +1,13 @@
-import type { Insertable, Selectable, Updateable } from 'kysely';
+import type { Generated, Insertable, Selectable, Updateable } from 'kysely';
+
+import type { StoryStatus } from '../../../Contracts/Domain/Story/StoryStatus.js';
 
 export const STORY_TABLE = 'story';
 
 export interface StoryTable {
-    id: string;
+    id: Generated<number>;
+    externalId: string;
+    status: StoryStatus;
 }
 
 export type KyselyStory = Selectable<StoryTable>;

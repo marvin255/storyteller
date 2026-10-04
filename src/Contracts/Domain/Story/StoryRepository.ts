@@ -6,8 +6,8 @@ import type { Story } from './Story.js';
  * Provides access to persisted conversation stories.
  */
 export interface StoryRepository {
-    /** Find a story by its unique identifier. */
-    findStoryById(id: Id): Promise<Story | null>;
+    /** Find an active story by related external id. */
+    findActiveStoryByExternalId(externalId: Id): Promise<Story | null>;
 }
 
 /**

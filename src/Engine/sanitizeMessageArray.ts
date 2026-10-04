@@ -28,21 +28,21 @@ const filterDuplicateMessages = (
     });
 };
 
-/* Filter messages to only include those with the same sessionId as the first message */
-const filterSameSessionOnlyMessages = (
+/* Filter messages to only include those with the same externalId as the first message */
+const filterSameExternalIdMessages = (
     messages: IOMessageInbound[],
     logger?: Logger,
 ): IOMessageInbound[] => {
-    const expectedSessionId = messages[0]?.sessionId;
-    if (!expectedSessionId) {
+    const expectedExternalId = messages[0]?.externalId;
+    if (!expectedExternalId) {
         return [];
     }
     const filteredMessages = messages.filter((msg) => {
-        if (msg.sessionId !== expectedSessionId) {
-            logger?.warn('Message has a different sessionId', {
+        if (msg.externalId !== expectedExternalId) {
+            logger?.warn('Message has a different externalId', {
                 id: msg.id,
-                sessionId: msg.sessionId,
-                expectedSessionId,
+                externalId: msg.externalId,
+                expectedExternalId,
             });
             return false;
         }
@@ -68,7 +68,7 @@ export const sanitizeMessageArray = (
     let messagesArray = makeSureIsArray(message);
     messagesArray = filterNullMessages(messagesArray);
     messagesArray = filterDuplicateMessages(messagesArray, logger);
-    messagesArray = filterSameSessionOnlyMessages(messagesArray, logger);
+    messagesArray = filterSameExternalIdMessages(messagesArray, logger);
     messagesArray = sortMessagesByDate(messagesArray);
     return messagesArray;
 };

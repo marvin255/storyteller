@@ -32,7 +32,7 @@ const createReadlineMock = (): ReadlineMock => ({
 describe('IOChannelConsole', () => {
     const channelId = createId('channel');
     const userId = createId('initial-user');
-    const sessionId = createId('initial-session');
+    const externalId = createId('initial-session');
 
     afterEach(() => {
         jest.restoreAllMocks();
@@ -47,7 +47,7 @@ describe('IOChannelConsole', () => {
             .spyOn(readline, 'createInterface')
             .mockReturnValue(readlineInstance as unknown as readline.Interface);
 
-        const consoleChannel = new IOChannelConsole(input, output, channelId, userId, sessionId);
+        const consoleChannel = new IOChannelConsole(input, output, channelId, userId, externalId);
 
         consoleChannel.attachEngine(engine);
 
@@ -69,7 +69,7 @@ describe('IOChannelConsole', () => {
         consoleChannel.attachEngine(engine);
         consoleChannel.send({
             id: createId('message'),
-            sessionId: createId('reply-session'),
+            externalId: createId('reply-session'),
             userId,
             content: 'Default channel response.',
         });
@@ -97,7 +97,7 @@ describe('IOChannelConsole', () => {
         );
         expect(message).toEqual({
             id: message.id,
-            sessionId,
+            externalId,
             userId,
             content: 'create a quiet forest scene',
             createdAt: expect.any(Date),
@@ -111,7 +111,7 @@ describe('IOChannelConsole', () => {
 
         expect(engine.handle).toHaveBeenCalledWith(
             expect.objectContaining({
-                sessionId,
+                externalId,
                 userId,
                 content: '/user-id user with spaces',
             }),
@@ -125,7 +125,7 @@ describe('IOChannelConsole', () => {
 
         expect(engine.handle).toHaveBeenCalledWith(
             expect.objectContaining({
-                sessionId,
+                externalId,
                 userId,
                 content: 'say /user-id next-user',
             }),
@@ -139,7 +139,7 @@ describe('IOChannelConsole', () => {
 
         expect(engine.handle).toHaveBeenCalledWith(
             expect.objectContaining({
-                sessionId,
+                externalId,
                 userId,
                 content: 'say /session-id next-session',
             }),
@@ -153,7 +153,7 @@ describe('IOChannelConsole', () => {
 
         expect(engine.handle).toHaveBeenCalledWith(
             expect.objectContaining({
-                sessionId,
+                externalId,
                 userId,
                 content: '/session-id next-session extra',
             }),
@@ -169,7 +169,7 @@ describe('IOChannelConsole', () => {
         expect(engine.handle).toHaveBeenCalledTimes(1);
         expect(engine.handle).toHaveBeenCalledWith(
             expect.objectContaining({
-                sessionId,
+                externalId,
                 userId: createId('next_user-123'),
                 content: 'hello',
             }),
@@ -185,7 +185,7 @@ describe('IOChannelConsole', () => {
         expect(engine.handle).toHaveBeenCalledTimes(1);
         expect(engine.handle).toHaveBeenCalledWith(
             expect.objectContaining({
-                sessionId,
+                externalId,
                 userId: createId('next_user-123'),
                 content: 'hello',
             }),
@@ -201,7 +201,7 @@ describe('IOChannelConsole', () => {
         expect(engine.handle).toHaveBeenCalledTimes(1);
         expect(engine.handle).toHaveBeenCalledWith(
             expect.objectContaining({
-                sessionId: createId('next_session-123'),
+                externalId: createId('next_session-123'),
                 userId,
                 content: 'hello',
             }),
@@ -217,7 +217,7 @@ describe('IOChannelConsole', () => {
         expect(engine.handle).toHaveBeenCalledTimes(1);
         expect(engine.handle).toHaveBeenCalledWith(
             expect.objectContaining({
-                sessionId: createId('next_session-123'),
+                externalId: createId('next_session-123'),
                 userId,
                 content: 'hello',
             }),
@@ -240,12 +240,12 @@ describe('IOChannelConsole', () => {
             output,
             channelId,
             userId,
-            sessionId,
+            externalId,
         );
 
         consoleChannel.send({
             id: createId('message'),
-            sessionId: createId('reply-session'),
+            externalId: createId('reply-session'),
             userId,
             content: 'A lantern flickers.',
         });
@@ -262,19 +262,19 @@ describe('IOChannelConsole', () => {
             output,
             channelId,
             userId,
-            sessionId,
+            externalId,
         );
 
         consoleChannel.send([
             {
                 id: createId('first'),
-                sessionId: createId('reply-session'),
+                externalId: createId('reply-session'),
                 userId,
                 content: 'First line.',
             },
             {
                 id: createId('second'),
-                sessionId: createId('reply-session'),
+                externalId: createId('reply-session'),
                 userId,
                 content: 'Second line.',
             },
@@ -300,7 +300,7 @@ describe('IOChannelConsole', () => {
             createOutput(),
             channelId,
             userId,
-            sessionId,
+            externalId,
         );
 
         consoleChannel.attachEngine(engine);
