@@ -7,7 +7,7 @@ const STORY_TABLE = 'story';
 export async function up(db: Kysely<KyselyDatabase>): Promise<void> {
     await db.schema
         .createTable(STORY_TABLE)
-        .addColumn('id', 'serial', (col) => col.primaryKey())
+        .addColumn('id', 'integer', (col) => col.generatedByDefaultAsIdentity().primaryKey())
         .addColumn('externalId', 'varchar(50)', (col) => col.notNull())
         .addColumn('status', 'varchar(50)', (col) => col.notNull())
         .execute();
@@ -18,7 +18,11 @@ export async function up(db: Kysely<KyselyDatabase>): Promise<void> {
         .column('externalId')
         .execute();
 
-    await db.schema.createIndex(`${STORY_TABLE}_status_index`).on(STORY_TABLE).column('status').execute();
+    await db.schema
+        .createIndex(`${STORY_TABLE}_status_index`)
+        .on(STORY_TABLE)
+        .column('status')
+        .execute();
 }
 
 export async function down(db: Kysely<KyselyDatabase>): Promise<void> {
