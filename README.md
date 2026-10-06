@@ -61,12 +61,14 @@ import { beforeEach, describe, expect, test } from '@jest/globals';
 
 import { createDeleteHelper } from '../../../helper/Database/createDeleteHelper.js';
 import { createInsertHelper } from '../../../helper/Database/createInsertHelper.js';
+import { createSelectHelper } from '../../../helper/Database/createSelectHelper.js';
 import { useTestDatabase } from '../../../helper/Database/useTestDatabase.js';
 
 describe('story persistence', () => {
     const database = useTestDatabase();
     const createInDb = createInsertHelper(database);
     const deleteFromDb = createDeleteHelper(database);
+    const selectFromDb = createSelectHelper(database);
 
     beforeEach(async () => {
         await deleteFromDb('story', { externalId: 'test' });
@@ -76,6 +78,7 @@ describe('story persistence', () => {
         const story = await createInDb('story', { status: 'new', externalId: 'test' });
 
         expect(story.status).toBe('new');
+        await expect(selectFromDb('story', { id: story.id })).resolves.toEqual([story]);
     });
 });
 ```
@@ -89,6 +92,12 @@ rows matching all supplied column values and returns the deleted row count as a
 clear rows for the suite's fixture IDs. Cleanup uses the current test transaction,
 so those deletions are also rolled back afterward. Empty filters and undefined
 filter values are rejected.
+
+`createSelectHelper(database)` provides `selectFromDb(table, filter)`, which returns
+the complete rows matching all supplied column values in the current test transaction.
+Table names, filters, and returned rows are checked against `KyselyDatabase`. An empty
+filter selects all rows, and no matches return an empty array. Use it to verify
+persisted data independently of repository methods.
 
 ## Mutation Testing
 

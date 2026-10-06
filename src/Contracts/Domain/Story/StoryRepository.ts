@@ -8,6 +8,9 @@ import type { Story } from './Story.js';
 export interface StoryRepository {
     /** Find an active story by related external id. */
     findActiveStoryByExternalId(externalId: Id): Promise<Story | null>;
+
+    /** Create a new story for the given external id. */
+    createNewStoryForExternalId(externalId: Id): Promise<Story>;
 }
 
 /**

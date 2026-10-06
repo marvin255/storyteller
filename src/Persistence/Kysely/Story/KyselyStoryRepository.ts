@@ -33,4 +33,17 @@ export class KyselyStoryRepository implements StoryRepository {
 
         return row ? convertKyselyToDomain(row) : null;
     }
+
+    async createNewStoryForExternalId(externalId: Id): Promise<Story> {
+        const row = await this.db
+            .insertInto(STORY_TABLE)
+            .values({
+                externalId: externalId,
+                status: 'new',
+            })
+            .returningAll()
+            .executeTakeFirstOrThrow();
+
+        return convertKyselyToDomain(row);
+    }
 }
