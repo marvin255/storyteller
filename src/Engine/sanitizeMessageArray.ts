@@ -40,8 +40,7 @@ const filterSameExternalIdMessages = (
     const filteredMessages = messages.filter((msg) => {
         if (msg.externalId !== expectedExternalId) {
             logger?.warn('Message has a different externalId', {
-                id: msg.id,
-                externalId: msg.externalId,
+                message: msg,
                 expectedExternalId,
             });
             return false;

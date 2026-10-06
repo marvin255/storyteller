@@ -87,16 +87,14 @@ describe('sanitizeMessageArray', () => {
             [
                 'Message has a different externalId',
                 {
-                    id: other.id,
-                    externalId: other.externalId,
+                    message: expect.objectContaining({ id: other.id }),
                     expectedExternalId: first.externalId,
                 },
             ],
             [
                 'Message has a different externalId',
                 {
-                    id: another.id,
-                    externalId: another.externalId,
+                    message: expect.objectContaining({ id: another.id }),
                     expectedExternalId: first.externalId,
                 },
             ],
@@ -137,8 +135,7 @@ describe('sanitizeMessageArray', () => {
             [
                 'Message has a different externalId',
                 {
-                    id: other.id,
-                    externalId: other.externalId,
+                    message: expect.objectContaining({ id: other.id }),
                     expectedExternalId: first.externalId,
                 },
             ],
