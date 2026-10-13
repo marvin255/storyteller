@@ -50,7 +50,6 @@
 - Keep changes focused and follow existing project patterns.
 - Add or update Jest tests for behavior changes; production code changes must be covered by unit tests.
 - Avoid new dependencies unless clearly justified. If dependencies change, use the commands above and keep the lockfile in sync.
-- Update `README.md` or other docs when setup, commands, behavior, or public usage changes.
 - Prefer running `make verify` to perform all non-mutating checks in one command.
 - If checking separately, run `make fixer`, then `make linter`, then `make architecture`, then `make test`.
 - If any verification step fails, stop and fix the issue before continuing.
@@ -64,6 +63,8 @@
 - Use `.js` extensions for local ESM imports in TypeScript files.
 - Create branded values, such as `Id`, through their factory functions instead of direct type assertions outside the defining module.
 - Keep public contracts small and UI-agnostic; put channel-specific behavior in implementation modules.
+- Never create unit tests for migrates and Kysely repositories.
+- Create for Kysely repositories only integration tests.
 
 ## Guardrails
 
