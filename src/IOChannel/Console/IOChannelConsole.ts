@@ -87,7 +87,7 @@ export class IOChannelConsole implements IOChannelListener, IOChannelSender {
 
     private createInboundMessage(message: string): IOMessageInbound {
         return {
-            id: createRandomId(),
+            messageId: createRandomId(),
             externalId: this.externalId,
             userId: this.userId,
             content: message,

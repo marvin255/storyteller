@@ -99,6 +99,33 @@ Table names, filters, and returned rows are checked against `KyselyDatabase`. An
 filter selects all rows, and no matches return an empty array. Use it to verify
 persisted data independently of repository methods.
 
+## Message Logging
+
+Run `make migrate` to create the `io_message` table. Retrieve `LoggedIOMessageRepository`
+from the entity manager and call `logMessageInbound(message)` with an
+`IOMessageInbound` or `logMessageOutbound(message)` with an `IOMessageOutbound`.
+Both methods initially set `storyId` to `null`. The table stores the base
+`IOMessage` fields, so channel-specific fields such as inbound `createdAt` are
+not persisted.
+
+Returned `LoggedIOMessage` records retain the original `messageId` and expose
+the database row ID as `id`. The repository explicitly sets `isHandled` to `false`
+for inbound messages and `true` for outbound messages; the database has no default
+for it. Call `markAllHandled(ids, story)` after successful processing of inbound
+messages. Supply `number[]` or `LoggedIOMessage[]` and a `Story` object or its numeric
+database ID. The method sets `isHandled: true` and links all selected logs to that
+story in one update. Repeating the call is safe; empty lists and unknown log IDs
+leave the table unchanged. The story must exist for matching rows to be updated.
+
+`findAllInboundByExternalIdAndMessageId(externalId, messageIds)` returns inbound
+logs matching the external ID and any ID in the supplied array, ordered by database
+`id`. The array accepts either `Id[]` or `IOMessage[]`; message objects contribute
+their `messageId` values. An empty array returns no logs. Each `externalId`/`messageId`
+pair is unique across both directions and all stories; logging a duplicate pair fails.
+The same message ID can be logged for different external IDs. Logging and marking
+messages handled are explicit repository calls; the engine does not invoke them
+automatically.
+
 ## Mutation Testing
 
 Mutation testing is powered by StrykerJS with the Jest runner and TypeScript checker.

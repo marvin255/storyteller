@@ -6,14 +6,14 @@ import { createId } from '../../../src/Contracts/Shared/Id.js';
 import { sanitizeMessageArray } from '../../../src/Engine/sanitizeMessageArray.js';
 
 const createMessage = (
-    id: string,
+    messageId: string,
     createdAt: string,
     externalId = 'session-one',
 ): IOMessageInbound => ({
-    id: createId(id),
+    messageId: createId(messageId),
     externalId: createId(externalId),
     userId: createId('user-one'),
-    content: `Message ${id}`,
+    content: `Message ${messageId}`,
     createdAt: new Date(createdAt),
 });
 
@@ -39,7 +39,7 @@ describe('sanitizeMessageArray', () => {
         expect(input).toEqual([third, first, second]);
     });
 
-    test('keeps the first message for each id and warns about duplicates', () => {
+    test('keeps the first message for each messageId and warns about duplicates', () => {
         const original = createMessage('same', '2026-01-03T00:00:00.000Z');
         const duplicate = createMessage('same', '2026-01-01T00:00:00.000Z');
         const other = createMessage('other', '2026-01-02T00:00:00.000Z');
@@ -49,7 +49,9 @@ describe('sanitizeMessageArray', () => {
             other,
             original,
         ]);
-        expect(warn.mock.calls).toEqual([['Duplicate message detected', { id: original.id }]]);
+        expect(warn.mock.calls).toEqual([
+            ['Duplicate message detected', { messageId: original.messageId }],
+        ]);
     });
 
     test('filters null and undefined entries from runtime input', () => {
@@ -87,14 +89,14 @@ describe('sanitizeMessageArray', () => {
             [
                 'Message has a different externalId',
                 {
-                    message: expect.objectContaining({ id: other.id }),
+                    message: expect.objectContaining({ messageId: other.messageId }),
                     expectedExternalId: first.externalId,
                 },
             ],
             [
                 'Message has a different externalId',
                 {
-                    message: expect.objectContaining({ id: another.id }),
+                    message: expect.objectContaining({ messageId: another.messageId }),
                     expectedExternalId: first.externalId,
                 },
             ],
@@ -131,11 +133,11 @@ describe('sanitizeMessageArray', () => {
 
         expect(sanitizeMessageArray([first, other, duplicate], logger)).toEqual([first]);
         expect(warn.mock.calls).toEqual([
-            ['Duplicate message detected', { id: duplicate.id }],
+            ['Duplicate message detected', { messageId: duplicate.messageId }],
             [
                 'Message has a different externalId',
                 {
-                    message: expect.objectContaining({ id: other.id }),
+                    message: expect.objectContaining({ messageId: other.messageId }),
                     expectedExternalId: first.externalId,
                 },
             ],

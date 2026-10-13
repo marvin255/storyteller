@@ -14,6 +14,7 @@ export function createSelectHelper(database: () => Kysely<KyselyDatabase>) {
             .selectFrom<keyof KyselyDatabase>(table)
             .selectAll()
             .where((eb) => eb.and(values))
+            .$castTo<Selectable<KyselyDatabase[Table]>>()
             .execute();
     };
 }

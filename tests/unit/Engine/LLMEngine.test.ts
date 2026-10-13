@@ -5,11 +5,11 @@ import type { IOMessageInbound } from '../../../src/Contracts/IOChannel/IOMessag
 import { createId } from '../../../src/Contracts/Shared/Id.js';
 import { LLMEngine } from '../../../src/Engine/LLMEngine.js';
 
-const createMessage = (id: string): IOMessageInbound => ({
-    id: createId(id),
-    externalId: createId(`external-${id}`),
-    userId: createId(`user-${id}`),
-    content: `Input ${id}`,
+const createMessage = (messageId: string): IOMessageInbound => ({
+    messageId: createId(messageId),
+    externalId: createId(`external-${messageId}`),
+    userId: createId(`user-${messageId}`),
+    content: `Input ${messageId}`,
     createdAt: new Date('2026-01-01T00:00:00Z'),
 });
 
@@ -25,7 +25,7 @@ describe('LLMEngine', () => {
         expect(send).toHaveBeenCalledTimes(messages.length);
         messages.forEach((message, index) => {
             expect(send).toHaveBeenNthCalledWith(index + 1, {
-                id: expect.stringMatching(/^[0-9a-f-]{36}$/u),
+                messageId: expect.stringMatching(/^[0-9a-f-]{36}$/u),
                 externalId: message.externalId,
                 userId: message.userId,
                 content: `LLM response placeholder: ${message.content}`,

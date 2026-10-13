@@ -68,7 +68,7 @@ describe('IOChannelConsole', () => {
 
         consoleChannel.attachEngine(engine);
         consoleChannel.send({
-            id: createId('message'),
+            messageId: createId('message'),
             externalId: createId('reply-session'),
             userId,
             content: 'Default channel response.',
@@ -92,11 +92,11 @@ describe('IOChannelConsole', () => {
 
         expect(engine.handle).toHaveBeenCalledTimes(1);
         const message = getHandledMessage(engine);
-        expect(message.id).toMatch(
+        expect(message.messageId).toMatch(
             /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/u,
         );
         expect(message).toEqual({
-            id: message.id,
+            messageId: message.messageId,
             externalId,
             userId,
             content: 'create a quiet forest scene',
@@ -244,7 +244,7 @@ describe('IOChannelConsole', () => {
         );
 
         consoleChannel.send({
-            id: createId('message'),
+            messageId: createId('message'),
             externalId: createId('reply-session'),
             userId,
             content: 'A lantern flickers.',
@@ -267,13 +267,13 @@ describe('IOChannelConsole', () => {
 
         consoleChannel.send([
             {
-                id: createId('first'),
+                messageId: createId('first'),
                 externalId: createId('reply-session'),
                 userId,
                 content: 'First line.',
             },
             {
-                id: createId('second'),
+                messageId: createId('second'),
                 externalId: createId('reply-session'),
                 userId,
                 content: 'Second line.',
