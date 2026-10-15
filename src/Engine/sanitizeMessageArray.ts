@@ -12,18 +12,19 @@ const filterNullMessages = (messages: IOMessageInbound[]): IOMessageInbound[] =>
     return messages.filter((msg) => msg !== null && msg !== undefined);
 };
 
-/* Filter out duplicate messages based on their messageId */
+/* Filter out duplicate messages based on their externalId and messageId pair */
 const filterDuplicateMessages = (
     messages: IOMessageInbound[],
     logger?: Logger,
 ): IOMessageInbound[] => {
     const seen = new Set();
-    return messages.filter((item) => {
-        if (seen.has(item.messageId)) {
-            logger?.warn('Duplicate message detected', { messageId: item.messageId });
+    return messages.filter(({ externalId, messageId }) => {
+        const messageKey = JSON.stringify([externalId, messageId]);
+        if (seen.has(messageKey)) {
+            logger?.warn('Duplicate message detected', { messageId: messageId });
             return false;
         }
-        seen.add(item.messageId);
+        seen.add(messageKey);
         return true;
     });
 };
@@ -58,7 +59,7 @@ const sortMessagesByDate = (messages: IOMessageInbound[]): IOMessageInbound[] =>
 /**
  * Sanitize an array of IOMessageInbound and convert it into a clean array of IOMessageInbound.
  * This function ensures that the input is an array, filters out null or undefined messages,
- * removes duplicate messages based on their messageId, and sorts the messages by their createdAt timestamp.
+ * removes duplicate messages based on their externalId and messageId pair, and sorts the messages by their createdAt timestamp.
  */
 export const sanitizeMessageArray = (
     message: IOMessageInbound | IOMessageInbound[],

@@ -40,9 +40,13 @@ describe('sanitizeMessageArray', () => {
         expect(input).toEqual([third, first, second]);
     });
 
-    test('keeps the first message for each messageId and warns about duplicates', () => {
+    test('keeps the first message for each externalId and messageId pair and warns about duplicates', () => {
         const original = createMessage('same', '2026-01-03T00:00:00.000Z');
-        const duplicate = createMessage('same', '2026-01-01T00:00:00.000Z');
+        const duplicate = {
+            ...createMessage('same', '2026-01-01T00:00:00.000Z'),
+            userId: createId('another-user'),
+            content: 'Changed content for the same message.',
+        };
         const other = createMessage('other', '2026-01-02T00:00:00.000Z');
         const { logger, warn } = createLogger();
 
@@ -53,6 +57,13 @@ describe('sanitizeMessageArray', () => {
         expect(warn.mock.calls).toEqual([
             ['Duplicate message detected', { messageId: original.messageId }],
         ]);
+    });
+
+    test('removes repeated pairs without a logger', () => {
+        const original = createMessage('same', '2026-01-02T00:00:00.000Z');
+        const duplicate = createMessage('same', '2026-01-01T00:00:00.000Z');
+
+        expect(sanitizeMessageArray([original, duplicate, duplicate])).toEqual([original]);
     });
 
     test('filters null and undefined entries from runtime input', () => {
@@ -126,19 +137,59 @@ describe('sanitizeMessageArray', () => {
         },
     );
 
-    test('removes duplicates before filtering external IDs', () => {
+    test('does not treat the same messageId under different external IDs as a duplicate', () => {
         const first = createMessage('first', '2026-01-01T00:00:00.000Z');
         const other = createMessage('same', '2026-01-02T00:00:00.000Z', 'session-two');
-        const duplicate = createMessage('same', '2026-01-03T00:00:00.000Z');
+        const matching = createMessage('same', '2026-01-03T00:00:00.000Z');
         const { logger, warn } = createLogger();
 
-        expect(sanitizeMessageArray([first, other, duplicate], logger)).toEqual([first]);
+        expect(sanitizeMessageArray([first, other, matching], logger)).toEqual([first, matching]);
+        expect(warn.mock.calls).toEqual([
+            [
+                'Message has a different externalId',
+                {
+                    message: other,
+                    expectedExternalId: first.externalId,
+                },
+            ],
+        ]);
+    });
+
+    test('removes repeated pairs before filtering external IDs', () => {
+        const first = createMessage('first', '2026-01-01T00:00:00.000Z');
+        const other = createMessage('same', '2026-01-02T00:00:00.000Z', 'session-two');
+        const duplicate = createMessage('same', '2026-01-03T00:00:00.000Z', 'session-two');
+        const matching = createMessage('same', '2026-01-04T00:00:00.000Z');
+        const { logger, warn } = createLogger();
+
+        expect(sanitizeMessageArray([first, other, duplicate, matching], logger)).toEqual([
+            first,
+            matching,
+        ]);
         expect(warn.mock.calls).toEqual([
             ['Duplicate message detected', { messageId: duplicate.messageId }],
             [
                 'Message has a different externalId',
                 {
                     message: expect.objectContaining({ messageId: other.messageId }),
+                    expectedExternalId: first.externalId,
+                },
+            ],
+        ]);
+    });
+
+    test('keeps distinct pairs separate when their IDs contain overlapping hyphens', () => {
+        const first = createMessage('first', '2026-01-01T00:00:00.000Z');
+        const other = createMessage('message', '2026-01-02T00:00:00.000Z', 'session-one-part');
+        const matching = createMessage('part-message', '2026-01-03T00:00:00.000Z');
+        const { logger, warn } = createLogger();
+
+        expect(sanitizeMessageArray([first, other, matching], logger)).toEqual([first, matching]);
+        expect(warn.mock.calls).toEqual([
+            [
+                'Message has a different externalId',
+                {
+                    message: other,
                     expectedExternalId: first.externalId,
                 },
             ],
