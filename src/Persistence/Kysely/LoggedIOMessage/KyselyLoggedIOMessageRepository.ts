@@ -83,6 +83,7 @@ export class KyselyLoggedIOMessageRepository implements LoggedIOMessageRepositor
                 type: message.type,
                 isHandled: message.type === 'outbound',
             }));
+
         let insertedMessages: LoggedIOMessage[] = [];
         if (newMessages.length > 0) {
             const insertedRows = await this.db
@@ -93,7 +94,11 @@ export class KyselyLoggedIOMessageRepository implements LoggedIOMessageRepositor
             insertedMessages = insertedRows.map(convertKyselyToDomain);
         }
 
-        return Promise.resolve([...existingMessages, ...insertedMessages]);
+        const allMessages = [...existingMessages, ...insertedMessages].sort(
+            (a, b) => a.createdAt.getTime() - b.createdAt.getTime(),
+        );
+
+        return Promise.resolve(allMessages);
     }
 
     async markAllHandled(ids: number[] | LoggedIOMessage[], story: Story | number): Promise<void> {

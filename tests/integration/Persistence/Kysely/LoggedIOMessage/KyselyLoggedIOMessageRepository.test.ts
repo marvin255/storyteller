@@ -70,7 +70,7 @@ describe('KyselyLoggedIOMessageRepository', () => {
                         messageId: createId('second-message'),
                         userId: createId('second-user'),
                         content: 'Another incoming message.',
-                        createdAt: new Date('2026-01-02T03:04:05.678Z'),
+                        createdAt: new Date('2025-12-31T23:59:59.678Z'),
                     },
                 ],
                 isHandled: false,
@@ -84,13 +84,13 @@ describe('KyselyLoggedIOMessageRepository', () => {
                         messageId: createId('second-message'),
                         userId: createId('second-user'),
                         content: 'Another outgoing message.',
-                        createdAt: new Date('2026-01-02T03:04:05.678Z'),
+                        createdAt: new Date('2025-12-31T23:59:59.678Z'),
                     },
                 ],
                 isHandled: true,
             },
         ])(
-            'creates $type messages with generated IDs and no story',
+            'creates $type messages with generated IDs and returns them by ascending creation time',
             async ({ messages, isHandled }) => {
                 const repository = new KyselyLoggedIOMessageRepository(database());
 
@@ -98,14 +98,12 @@ describe('KyselyLoggedIOMessageRepository', () => {
 
                 expect(logged).toHaveLength(messages.length);
                 expect(logged).toEqual(
-                    expect.arrayContaining(
-                        messages.map((message) => ({
-                            ...message,
-                            id: expect.any(Number),
-                            storyId: null,
-                            isHandled,
-                        })),
-                    ),
+                    messages.toReversed().map((message) => ({
+                        ...message,
+                        id: expect.any(Number),
+                        storyId: null,
+                        isHandled,
+                    })),
                 );
                 expect(new Set(logged.map((message) => message.id)).size).toBe(messages.length);
                 logged.forEach((message) => {
@@ -119,8 +117,7 @@ describe('KyselyLoggedIOMessageRepository', () => {
 
                 const repeated = await repository.persistIOMessages(messages);
 
-                expect(repeated).toHaveLength(logged.length);
-                expect(repeated).toEqual(expect.arrayContaining(logged));
+                expect(repeated).toEqual(logged);
                 const afterRepeat = await selectFromDb(LOGGED_IO_MESSAGE_TABLE, {
                     externalId: externalIds.matching,
                 });
@@ -200,6 +197,57 @@ describe('KyselyLoggedIOMessageRepository', () => {
             ).resolves.toEqual([otherExternal]);
         });
 
+        test('sorts existing and newly inserted messages together using their stored creation times', async () => {
+            const laterMessage = {
+                ...inboundMessage,
+                messageId: createId('stored-later'),
+                createdAt: new Date('2026-01-03T00:00:00Z'),
+            };
+            const later = await createInDb(LOGGED_IO_MESSAGE_TABLE, {
+                ...laterMessage,
+                storyId: null,
+                isHandled: false,
+            });
+            const earliest = await createInDb(LOGGED_IO_MESSAGE_TABLE, {
+                ...inboundMessage,
+                storyId: null,
+                isHandled: false,
+            });
+            const middleMessage = {
+                ...inboundMessage,
+                messageId: createId('new-middle'),
+                createdAt: new Date('2026-01-02T00:00:00Z'),
+            };
+            const latestMessage = {
+                ...inboundMessage,
+                messageId: createId('new-latest'),
+                createdAt: new Date('2026-01-04T00:00:00Z'),
+            };
+            const messages = [
+                latestMessage,
+                { ...laterMessage, createdAt: new Date('2025-12-01T00:00:00Z') },
+                middleMessage,
+                { ...inboundMessage, createdAt: new Date('2026-02-01T00:00:00Z') },
+            ];
+            const inputOrder = messages.slice();
+            const repository = new KyselyLoggedIOMessageRepository(database());
+
+            const logged = await repository.persistIOMessages(messages);
+
+            expect(logged).toEqual([
+                earliest,
+                { ...middleMessage, id: expect.any(Number), storyId: null, isHandled: false },
+                later,
+                { ...latestMessage, id: expect.any(Number), storyId: null, isHandled: false },
+            ]);
+            expect(messages).toEqual(inputOrder);
+            const stored = await selectFromDb(LOGGED_IO_MESSAGE_TABLE, {
+                externalId: externalIds.matching,
+            });
+            expect(stored).toHaveLength(logged.length);
+            expect(stored).toEqual(expect.arrayContaining(logged));
+        });
+
         test('matches complete external ID and message ID pairs across a batch', async () => {
             const secondMessage = {
                 ...inboundMessage,
@@ -272,12 +320,26 @@ describe('KyselyLoggedIOMessageRepository', () => {
         test.each([
             {
                 type: 'inbound',
-                messages: [inboundMessage, { ...inboundMessage, content: 'Duplicate.' }],
+                messages: [
+                    inboundMessage,
+                    {
+                        ...inboundMessage,
+                        content: 'Duplicate.',
+                        createdAt: new Date('2025-12-31T00:00:00Z'),
+                    },
+                ],
                 isHandled: false,
             },
             {
                 type: 'outbound',
-                messages: [outboundMessage, { ...outboundMessage, content: 'Duplicate.' }],
+                messages: [
+                    outboundMessage,
+                    {
+                        ...outboundMessage,
+                        content: 'Duplicate.',
+                        createdAt: new Date('2025-12-31T00:00:00Z'),
+                    },
+                ],
                 isHandled: true,
             },
         ])(
