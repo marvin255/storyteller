@@ -32,7 +32,13 @@ export class PipelineEngine implements Engine {
             return Promise.resolve();
         }
 
-        const messages = await this.persistMessages(sanitizeMessageArray(message, this.logger));
+        let messages;
+        try {
+            messages = await this.persistMessages(sanitizeMessageArray(message, this.logger));
+        } catch (error) {
+            this.logger.error('Failed to persist messages', error, { message });
+            throw error;
+        }
         if (messages.length === 0) {
             this.logger.warn('No messages found to process', { message });
             return Promise.resolve();
