@@ -68,10 +68,12 @@ describe('IOChannelConsole', () => {
 
         consoleChannel.attachEngine(engine);
         consoleChannel.send({
+            type: 'outbound',
             messageId: createId('message'),
             externalId: createId('reply-session'),
             userId,
             content: 'Default channel response.',
+            createdAt: new Date('2026-01-01T00:00:00Z'),
         });
 
         expect(createInterface).toHaveBeenCalledWith({
@@ -96,6 +98,7 @@ describe('IOChannelConsole', () => {
             /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/u,
         );
         expect(message).toEqual({
+            type: 'inbound',
             messageId: message.messageId,
             externalId,
             userId,
@@ -244,10 +247,12 @@ describe('IOChannelConsole', () => {
         );
 
         consoleChannel.send({
+            type: 'outbound',
             messageId: createId('message'),
             externalId: createId('reply-session'),
             userId,
             content: 'A lantern flickers.',
+            createdAt: new Date('2026-01-01T00:00:00Z'),
         });
 
         expect(output.write).toHaveBeenCalledWith(
@@ -267,16 +272,20 @@ describe('IOChannelConsole', () => {
 
         consoleChannel.send([
             {
+                type: 'outbound',
                 messageId: createId('first'),
                 externalId: createId('reply-session'),
                 userId,
                 content: 'First line.',
+                createdAt: new Date('2026-01-01T00:00:00Z'),
             },
             {
+                type: 'outbound',
                 messageId: createId('second'),
                 externalId: createId('reply-session'),
                 userId,
                 content: 'Second line.',
+                createdAt: new Date('2026-01-01T00:00:00Z'),
             },
         ]);
 

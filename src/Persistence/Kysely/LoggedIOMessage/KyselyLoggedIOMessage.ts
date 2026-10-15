@@ -10,6 +10,7 @@ export interface LoggedIOMessageTable {
     externalId: string;
     userId: string;
     content: string;
+    createdAt: Date;
     storyId: number | null;
     isHandled: boolean;
     type: LoggedIOMessageType;

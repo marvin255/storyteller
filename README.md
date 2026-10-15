@@ -117,11 +117,8 @@ database ID. The method sets `isHandled: true` and links all selected logs to th
 story in one update. Repeating the call is safe; empty lists and unknown log IDs
 leave the table unchanged. The story must exist for matching rows to be updated.
 
-`findAllInboundByExternalIdAndMessageId(externalId, messageIds)` returns inbound
-logs matching the external ID and any ID in the supplied array, ordered by database
-`id`. The array accepts either `Id[]` or `IOMessage[]`; message objects contribute
-their `messageId` values. An empty array returns no logs. Each `externalId`/`messageId`
-pair is unique across both directions and all stories; logging a duplicate pair fails.
+Each `externalId`/`messageId` pair is unique across both directions and all stories;
+logging a duplicate pair fails.
 The same message ID can be logged for different external IDs. Logging and marking
 messages handled are explicit repository calls; the engine does not invoke them
 automatically.

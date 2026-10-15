@@ -6,6 +6,7 @@ import { createId } from '../../../src/Contracts/Shared/Id.js';
 import { LLMEngine } from '../../../src/Engine/LLMEngine.js';
 
 const createMessage = (messageId: string): IOMessageInbound => ({
+    type: 'inbound',
     messageId: createId(messageId),
     externalId: createId(`external-${messageId}`),
     userId: createId(`user-${messageId}`),
@@ -25,10 +26,12 @@ describe('LLMEngine', () => {
         expect(send).toHaveBeenCalledTimes(messages.length);
         messages.forEach((message, index) => {
             expect(send).toHaveBeenNthCalledWith(index + 1, {
+                type: 'outbound',
                 messageId: expect.stringMatching(/^[0-9a-f-]{36}$/u),
                 externalId: message.externalId,
                 userId: message.userId,
                 content: `LLM response placeholder: ${message.content}`,
+                createdAt: expect.any(Date),
             });
         });
     });

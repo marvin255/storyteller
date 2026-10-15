@@ -20,10 +20,12 @@ export class LLMEngine implements Engine {
 
     private createOutboundMessage(message: IOMessageInbound): IOMessageOutbound {
         return {
+            type: 'outbound',
             messageId: createRandomId(),
             externalId: message.externalId,
             userId: message.userId,
             content: `LLM response placeholder: ${message.content}`,
+            createdAt: new Date(),
         };
     }
 }

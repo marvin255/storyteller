@@ -1,15 +1,18 @@
-import type { Kysely } from 'kysely';
+import type { Expression, Kysely, SqlBool } from 'kysely';
 
 import type { LoggedIOMessage } from '../../../Contracts/Domain/LoggedIOMessage/LoggedIOMessage.js';
 import type { LoggedIOMessageRepository } from '../../../Contracts/Domain/LoggedIOMessage/LoggedIOMessageRepository.js';
-import type { LoggedIOMessageType } from '../../../Contracts/Domain/LoggedIOMessage/LoggedIOMessageType.js';
 import type { Story } from '../../../Contracts/Domain/Story/Story.js';
 import type { IOMessage } from '../../../Contracts/IOChannel/IOMessage.js';
 import type { IOMessageInbound } from '../../../Contracts/IOChannel/IOMessageInbound.js';
 import type { IOMessageOutbound } from '../../../Contracts/IOChannel/IOMessageOutbound.js';
-import { createId, type Id } from '../../../Contracts/Shared/Id.js';
+import { createId } from '../../../Contracts/Shared/Id.js';
 import type { KyselyDatabase } from '../KyselyDatabase.js';
-import { type KyselyLoggedIOMessage, LOGGED_IO_MESSAGE_TABLE } from './KyselyLoggedIOMessage.js';
+import {
+    type KyselyLoggedIOMessage,
+    LOGGED_IO_MESSAGE_TABLE,
+    type NewKyselyLoggedIOMessage,
+} from './KyselyLoggedIOMessage.js';
 
 /** Converts a stored row while preserving the original message ID. */
 const convertKyselyToDomain = (message: KyselyLoggedIOMessage): LoggedIOMessage => ({
@@ -18,6 +21,7 @@ const convertKyselyToDomain = (message: KyselyLoggedIOMessage): LoggedIOMessage 
     externalId: createId(message.externalId),
     userId: createId(message.userId),
     content: message.content,
+    createdAt: message.createdAt,
     storyId: message.storyId,
     isHandled: message.isHandled,
     type: message.type,
@@ -27,40 +31,71 @@ const convertKyselyToDomain = (message: KyselyLoggedIOMessage): LoggedIOMessage 
 export class KyselyLoggedIOMessageRepository implements LoggedIOMessageRepository {
     constructor(private db: Kysely<KyselyDatabase>) {}
 
-    /** Log an unhandled inbound message without a story. */
-    logMessageInbound(message: IOMessageInbound): Promise<LoggedIOMessage> {
-        return this.createLoggedMessage(message, 'inbound');
-    }
-
-    /** Log an already handled outbound message without a story. */
-    logMessageOutbound(message: IOMessageOutbound): Promise<LoggedIOMessage> {
-        return this.createLoggedMessage(message, 'outbound');
-    }
-
-    /** Find inbound logs using message IDs or messages, ordered by row ID. */
-    async findAllInboundByExternalIdAndMessageId(
-        externalId: Id,
-        messageIds: Id[] | IOMessage[],
+    async persistIOMessages(
+        messages: IOMessageInbound[] | IOMessageOutbound[],
     ): Promise<LoggedIOMessage[]> {
-        if (messageIds.length === 0) {
-            return [];
+        if (messages.length === 0) {
+            return Promise.resolve([]);
         }
 
-        const ids = messageIds.map((item) => (typeof item === 'string' ? item : item.messageId));
+        const deduplicatedMessagesKeys = new Set();
+        const deduplicatedMessages = messages.filter((message) => {
+            const key = this.createMessageKey(message);
+            if (deduplicatedMessagesKeys.has(key)) {
+                return false;
+            }
+            deduplicatedMessagesKeys.add(this.createMessageKey(message));
+            return true;
+        });
 
         const rows = await this.db
             .selectFrom(LOGGED_IO_MESSAGE_TABLE)
             .selectAll()
-            .where('externalId', '=', externalId)
-            .where('messageId', 'in', ids)
-            .where('type', '=', 'inbound')
-            .orderBy('id', 'asc')
+            .where((eb) => {
+                const ors: Expression<SqlBool>[] = [];
+                deduplicatedMessages.forEach(({ externalId, messageId }) => {
+                    ors.push(
+                        eb.and([
+                            eb('externalId', '=', externalId),
+                            eb('messageId', '=', messageId),
+                        ]),
+                    );
+                });
+                return eb.or(ors);
+            })
             .execute();
 
-        return rows.map(convertKyselyToDomain);
+        const existingMessageKeys = new Set();
+        const existingMessages = rows.map((row) => {
+            existingMessageKeys.add(this.createMessageKey(row));
+            return convertKyselyToDomain(row);
+        });
+
+        const newMessages: NewKyselyLoggedIOMessage[] = deduplicatedMessages
+            .filter((message) => !existingMessageKeys.has(this.createMessageKey(message)))
+            .map((message) => ({
+                messageId: message.messageId,
+                externalId: message.externalId,
+                userId: message.userId,
+                content: message.content,
+                createdAt: message.createdAt,
+                storyId: null,
+                type: message.type,
+                isHandled: message.type === 'outbound',
+            }));
+        let insertedMessages: LoggedIOMessage[] = [];
+        if (newMessages.length > 0) {
+            const insertedRows = await this.db
+                .insertInto(LOGGED_IO_MESSAGE_TABLE)
+                .values(newMessages)
+                .returningAll()
+                .execute();
+            insertedMessages = insertedRows.map(convertKyselyToDomain);
+        }
+
+        return Promise.resolve([...existingMessages, ...insertedMessages]);
     }
 
-    /** Mark the selected logs handled and link them to the supplied story. */
     async markAllHandled(ids: number[] | LoggedIOMessage[], story: Story | number): Promise<void> {
         if (ids.length === 0) {
             return;
@@ -68,10 +103,6 @@ export class KyselyLoggedIOMessageRepository implements LoggedIOMessageRepositor
 
         const logIds = ids.map((item) => (typeof item === 'number' ? item : item.id));
         const storyId = typeof story === 'number' ? story : story.id;
-        if (!Number.isInteger(storyId)) {
-            throw new TypeError('Story ID must be an integer.');
-        }
-
         await this.db
             .updateTable(LOGGED_IO_MESSAGE_TABLE)
             .set({ isHandled: true, storyId })
@@ -79,25 +110,7 @@ export class KyselyLoggedIOMessageRepository implements LoggedIOMessageRepositor
             .execute();
     }
 
-    /** Creates a new logged message row in the database. */
-    private async createLoggedMessage(
-        message: IOMessage,
-        type: LoggedIOMessageType,
-    ): Promise<LoggedIOMessage> {
-        const row = await this.db
-            .insertInto(LOGGED_IO_MESSAGE_TABLE)
-            .values({
-                messageId: message.messageId,
-                externalId: message.externalId,
-                userId: message.userId,
-                content: message.content,
-                storyId: null,
-                type,
-                isHandled: type === 'outbound',
-            })
-            .returningAll()
-            .executeTakeFirstOrThrow();
-
-        return convertKyselyToDomain(row);
+    private createMessageKey({ externalId, messageId }: IOMessage | KyselyLoggedIOMessage): string {
+        return JSON.stringify([externalId, messageId]);
     }
 }

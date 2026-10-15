@@ -20,16 +20,19 @@ describe('KyselyLoggedIOMessageRepository', () => {
     const externalIds = {
         matching: createId('KyselyLoggedIOMessageRepository-123'),
         other: createId('KyselyLoggedIOMessageRepository-456'),
+        overlapping: createId('KyselyLoggedIOMessageRepository-123-part'),
     };
     const outboundMessage: IOMessageOutbound = {
+        type: 'outbound',
         messageId: createId('message-123'),
         externalId: externalIds.matching,
         userId: createId('user-456'),
         content: 'A long message\nwith Unicode: příběh. '.repeat(100),
+        createdAt: new Date('2026-01-01T00:00:00Z'),
     };
     const inboundMessage: IOMessageInbound = {
         ...outboundMessage,
-        createdAt: new Date('2026-01-01T00:00:00Z'),
+        type: 'inbound',
     };
 
     beforeEach(async () => {
@@ -41,266 +44,308 @@ describe('KyselyLoggedIOMessageRepository', () => {
         }
     });
 
-    describe('logMessageInbound', () => {
-        test('creates and returns an unhandled domain message with a generated ID and no story', async () => {
-            const repository = new KyselyLoggedIOMessageRepository(database());
-
-            const logged = await repository.logMessageInbound(inboundMessage);
-
-            expect(logged).toEqual({
-                ...outboundMessage,
-                id: expect.any(Number),
-                storyId: null,
-                isHandled: false,
-                type: 'inbound',
-            });
-            expect(logged.id).toBeGreaterThan(0);
-            await expect(
-                selectFromDb(LOGGED_IO_MESSAGE_TABLE, { externalId: externalIds.matching }),
-            ).resolves.toEqual([logged]);
-        });
-
-        test('rejects a repeated external ID and message ID pair', async () => {
-            const repository = new KyselyLoggedIOMessageRepository(database());
-            await repository.logMessageInbound(inboundMessage);
-
-            await expect(repository.logMessageInbound(inboundMessage)).rejects.toMatchObject({
-                code: '23505',
-                constraint: 'io_message_external_id_message_id_index',
-            });
-        });
-
-        test('allows the same message ID for different external IDs', async () => {
-            const repository = new KyselyLoggedIOMessageRepository(database());
-
-            const first = await repository.logMessageInbound(inboundMessage);
-            const second = await repository.logMessageInbound({
+    describe('persistIOMessages', () => {
+        test('returns an empty list and leaves stored messages unchanged for an empty batch', async () => {
+            const stored = await createInDb(LOGGED_IO_MESSAGE_TABLE, {
                 ...inboundMessage,
-                externalId: externalIds.other,
+                storyId: null,
+                isHandled: false,
             });
-
-            expect(second.id).not.toBe(first.id);
-            expect(second.messageId).toBe(first.messageId);
-            await expect(
-                selectFromDb(LOGGED_IO_MESSAGE_TABLE, { externalId: externalIds.matching }),
-            ).resolves.toEqual([first]);
-            await expect(
-                selectFromDb(LOGGED_IO_MESSAGE_TABLE, { externalId: externalIds.other }),
-            ).resolves.toEqual([second]);
-        });
-    });
-
-    describe('logMessageOutbound', () => {
-        test('creates and returns a handled domain message with a generated ID and no story', async () => {
             const repository = new KyselyLoggedIOMessageRepository(database());
 
-            const logged = await repository.logMessageOutbound(outboundMessage);
+            await expect(repository.persistIOMessages([])).resolves.toEqual([]);
 
-            expect(logged).toEqual({
-                ...outboundMessage,
-                id: expect.any(Number),
-                storyId: null,
-                isHandled: true,
+            await expect(
+                selectFromDb(LOGGED_IO_MESSAGE_TABLE, { externalId: externalIds.matching }),
+            ).resolves.toEqual([stored]);
+        });
+
+        test.each([
+            {
+                type: 'inbound',
+                messages: [
+                    inboundMessage,
+                    {
+                        ...inboundMessage,
+                        messageId: createId('second-message'),
+                        userId: createId('second-user'),
+                        content: 'Another incoming message.',
+                        createdAt: new Date('2026-01-02T03:04:05.678Z'),
+                    },
+                ],
+                isHandled: false,
+            },
+            {
                 type: 'outbound',
-            });
-            expect(logged.id).toBeGreaterThan(0);
-            await expect(
-                selectFromDb(LOGGED_IO_MESSAGE_TABLE, { externalId: externalIds.matching }),
-            ).resolves.toEqual([logged]);
-        });
+                messages: [
+                    outboundMessage,
+                    {
+                        ...outboundMessage,
+                        messageId: createId('second-message'),
+                        userId: createId('second-user'),
+                        content: 'Another outgoing message.',
+                        createdAt: new Date('2026-01-02T03:04:05.678Z'),
+                    },
+                ],
+                isHandled: true,
+            },
+        ])(
+            'creates $type messages with generated IDs and no story',
+            async ({ messages, isHandled }) => {
+                const repository = new KyselyLoggedIOMessageRepository(database());
 
-        test('rejects a repeated external ID and message ID pair', async () => {
-            const repository = new KyselyLoggedIOMessageRepository(database());
-            await repository.logMessageOutbound(outboundMessage);
+                const logged = await repository.persistIOMessages(messages);
 
-            await expect(repository.logMessageOutbound(outboundMessage)).rejects.toMatchObject({
-                code: '23505',
-                constraint: 'io_message_external_id_message_id_index',
-            });
-        });
-
-        test('rejects an outbound message with the same pair as an inbound message', async () => {
-            const repository = new KyselyLoggedIOMessageRepository(database());
-            await repository.logMessageInbound(inboundMessage);
-
-            await expect(repository.logMessageOutbound(outboundMessage)).rejects.toMatchObject({
-                code: '23505',
-                constraint: 'io_message_external_id_message_id_index',
-            });
-        });
-
-        test('stores outbound and inbound messages with different message IDs separately', async () => {
-            const repository = new KyselyLoggedIOMessageRepository(database());
-
-            const inbound = await repository.logMessageInbound(inboundMessage);
-            const outbound = await repository.logMessageOutbound({
-                ...outboundMessage,
-                messageId: createId('outbound-message'),
-            });
-
-            expect(outbound.id).not.toBe(inbound.id);
-            const rows = await selectFromDb(LOGGED_IO_MESSAGE_TABLE, {
-                externalId: externalIds.matching,
-            });
-            expect(rows).toHaveLength(2);
-            expect(rows).toEqual(expect.arrayContaining([inbound, outbound]));
-        });
-    });
-
-    describe('findAllInboundByExternalIdAndMessageId', () => {
-        test('returns an empty list when no messages exist', async () => {
-            const repository = new KyselyLoggedIOMessageRepository(database());
-
-            await expect(
-                repository.findAllInboundByExternalIdAndMessageId(externalIds.matching, [
-                    inboundMessage.messageId,
-                ]),
-            ).resolves.toEqual([]);
-        });
-
-        test('returns an empty list for an empty message ID array', async () => {
-            const repository = new KyselyLoggedIOMessageRepository(database());
-            await repository.logMessageInbound(inboundMessage);
-
-            await expect(
-                repository.findAllInboundByExternalIdAndMessageId(externalIds.matching, []),
-            ).resolves.toEqual([]);
-        });
-
-        test('returns an empty list when only outbound messages match', async () => {
-            const repository = new KyselyLoggedIOMessageRepository(database());
-            await repository.logMessageOutbound(outboundMessage);
-
-            await expect(
-                repository.findAllInboundByExternalIdAndMessageId(externalIds.matching, [
-                    inboundMessage.messageId,
-                ]),
-            ).resolves.toEqual([]);
-        });
-
-        test('returns an empty list when messages belong to another external ID', async () => {
-            const db = database();
-            await createInDb(LOGGED_IO_MESSAGE_TABLE, {
-                ...outboundMessage,
-                externalId: externalIds.other,
-                storyId: null,
-                isHandled: false,
-                type: 'inbound',
-            });
-            const repository = new KyselyLoggedIOMessageRepository(db);
-
-            await expect(
-                repository.findAllInboundByExternalIdAndMessageId(externalIds.matching, [
-                    inboundMessage.messageId,
-                ]),
-            ).resolves.toEqual([]);
-        });
-
-        test('returns an empty list when message IDs do not match', async () => {
-            const db = database();
-            await createInDb(LOGGED_IO_MESSAGE_TABLE, {
-                ...outboundMessage,
-                messageId: createId('unrequested-message'),
-                storyId: null,
-                isHandled: false,
-                type: 'inbound',
-            });
-            const repository = new KyselyLoggedIOMessageRepository(db);
-
-            await expect(
-                repository.findAllInboundByExternalIdAndMessageId(externalIds.matching, [
-                    inboundMessage.messageId,
-                ]),
-            ).resolves.toEqual([]);
-        });
-
-        test.each(['ids', 'messages'] as const)(
-            'returns matching inbound logs across stories in row ID order using %s',
-            async (input) => {
-                const db = database();
-                const previousStory = await createInDb(STORY_TABLE, {
-                    externalId: externalIds.matching,
-                    status: 'closed',
-                });
-                const currentStory = await createInDb(STORY_TABLE, {
-                    externalId: externalIds.matching,
-                    status: 'new',
-                });
-                const secondMessageId = createId('other-message');
-                const thirdMessageId = createId('third-message');
-                const outboundMessageId = createId('outbound-message');
-                const first = await createInDb(LOGGED_IO_MESSAGE_TABLE, {
-                    ...outboundMessage,
-                    storyId: previousStory.id,
-                    isHandled: true,
-                    type: 'inbound',
-                });
-                const second = await createInDb(LOGGED_IO_MESSAGE_TABLE, {
-                    ...outboundMessage,
-                    messageId: secondMessageId,
-                    storyId: currentStory.id,
-                    isHandled: false,
-                    type: 'inbound',
-                });
-                const third = await createInDb(LOGGED_IO_MESSAGE_TABLE, {
-                    ...outboundMessage,
-                    messageId: thirdMessageId,
-                    storyId: currentStory.id,
-                    isHandled: false,
-                    type: 'inbound',
-                });
-                await createInDb(LOGGED_IO_MESSAGE_TABLE, {
-                    ...outboundMessage,
-                    messageId: createId('unrequested-message'),
-                    storyId: null,
-                    isHandled: false,
-                    type: 'inbound',
-                });
-                await createInDb(LOGGED_IO_MESSAGE_TABLE, {
-                    ...outboundMessage,
-                    externalId: externalIds.other,
-                    storyId: null,
-                    isHandled: false,
-                    type: 'inbound',
-                });
-                await createInDb(LOGGED_IO_MESSAGE_TABLE, {
-                    ...outboundMessage,
-                    messageId: outboundMessageId,
-                    storyId: currentStory.id,
-                    isHandled: true,
-                    type: 'outbound',
-                });
-                const repository = new KyselyLoggedIOMessageRepository(db);
-                const requestedIds = [
-                    outboundMessageId,
-                    thirdMessageId,
-                    secondMessageId,
-                    inboundMessage.messageId,
-                ];
-                const messageIds =
-                    input === 'messages'
-                        ? requestedIds.map((messageId) => ({ ...inboundMessage, messageId }))
-                        : requestedIds;
-
-                await expect(
-                    repository.findAllInboundByExternalIdAndMessageId(
-                        externalIds.matching,
-                        messageIds,
+                expect(logged).toHaveLength(messages.length);
+                expect(logged).toEqual(
+                    expect.arrayContaining(
+                        messages.map((message) => ({
+                            ...message,
+                            id: expect.any(Number),
+                            storyId: null,
+                            isHandled,
+                        })),
                     ),
-                ).resolves.toEqual([first, second, third]);
+                );
+                expect(new Set(logged.map((message) => message.id)).size).toBe(messages.length);
+                logged.forEach((message) => {
+                    expect(message.id).toBeGreaterThan(0);
+                });
+                const stored = await selectFromDb(LOGGED_IO_MESSAGE_TABLE, {
+                    externalId: externalIds.matching,
+                });
+                expect(stored).toHaveLength(logged.length);
+                expect(stored).toEqual(expect.arrayContaining(logged));
+
+                const repeated = await repository.persistIOMessages(messages);
+
+                expect(repeated).toHaveLength(logged.length);
+                expect(repeated).toEqual(expect.arrayContaining(logged));
+                const afterRepeat = await selectFromDb(LOGGED_IO_MESSAGE_TABLE, {
+                    externalId: externalIds.matching,
+                });
+                expect(afterRepeat).toHaveLength(logged.length);
+                expect(afterRepeat).toEqual(expect.arrayContaining(logged));
             },
         );
 
-        test('returns each stored log once when the supplied IDs contain duplicates', async () => {
+        test.each([inboundMessage, outboundMessage])(
+            'returns an existing $type message without replacing its contents or processing state',
+            async (message) => {
+                const story = await createInDb(STORY_TABLE, {
+                    externalId: externalIds.matching,
+                    status: 'closed',
+                });
+                const stored = await createInDb(LOGGED_IO_MESSAGE_TABLE, {
+                    ...message,
+                    storyId: story.id,
+                    isHandled: true,
+                });
+                const repository = new KyselyLoggedIOMessageRepository(database());
+
+                await expect(
+                    repository.persistIOMessages([
+                        {
+                            ...inboundMessage,
+                            userId: createId('changed-user'),
+                            content: 'Changed incoming content.',
+                            createdAt: new Date('2026-02-01T00:00:00Z'),
+                        },
+                    ]),
+                ).resolves.toEqual([stored]);
+                await expect(
+                    selectFromDb(LOGGED_IO_MESSAGE_TABLE, { id: stored.id }),
+                ).resolves.toEqual([stored]);
+            },
+        );
+
+        test('returns existing and new messages together without returning unrelated messages', async () => {
+            const existing = await createInDb(LOGGED_IO_MESSAGE_TABLE, {
+                ...inboundMessage,
+                storyId: null,
+                isHandled: false,
+            });
+            const unrelated = await createInDb(LOGGED_IO_MESSAGE_TABLE, {
+                ...inboundMessage,
+                messageId: createId('unrequested-message'),
+                storyId: null,
+                isHandled: false,
+            });
+            const otherExternal = await createInDb(LOGGED_IO_MESSAGE_TABLE, {
+                ...inboundMessage,
+                externalId: externalIds.other,
+                storyId: null,
+                isHandled: false,
+            });
+            const newMessage = { ...inboundMessage, messageId: createId('new-message') };
             const repository = new KyselyLoggedIOMessageRepository(database());
-            const logged = await repository.logMessageInbound(inboundMessage);
+
+            const logged = await repository.persistIOMessages([newMessage, inboundMessage]);
+
+            const expected = {
+                ...newMessage,
+                id: expect.any(Number),
+                storyId: null,
+                isHandled: false,
+            };
+            expect(logged).toHaveLength(2);
+            expect(logged).toEqual(expect.arrayContaining([existing, expected]));
+            const stored = await selectFromDb(LOGGED_IO_MESSAGE_TABLE, {
+                externalId: externalIds.matching,
+            });
+            expect(stored).toHaveLength(3);
+            expect(stored).toEqual(expect.arrayContaining([existing, unrelated, expected]));
+            await expect(
+                selectFromDb(LOGGED_IO_MESSAGE_TABLE, { externalId: externalIds.other }),
+            ).resolves.toEqual([otherExternal]);
+        });
+
+        test('matches complete external ID and message ID pairs across a batch', async () => {
+            const secondMessage = {
+                ...inboundMessage,
+                externalId: externalIds.other,
+                messageId: createId('second-message'),
+            };
+            const first = await createInDb(LOGGED_IO_MESSAGE_TABLE, {
+                ...inboundMessage,
+                storyId: null,
+                isHandled: false,
+            });
+            const second = await createInDb(LOGGED_IO_MESSAGE_TABLE, {
+                ...secondMessage,
+                storyId: null,
+                isHandled: false,
+            });
+            const unrelatedFirst = await createInDb(LOGGED_IO_MESSAGE_TABLE, {
+                ...inboundMessage,
+                messageId: secondMessage.messageId,
+                storyId: null,
+                isHandled: false,
+            });
+            const unrelatedSecond = await createInDb(LOGGED_IO_MESSAGE_TABLE, {
+                ...secondMessage,
+                messageId: inboundMessage.messageId,
+                storyId: null,
+                isHandled: false,
+            });
+            const repository = new KyselyLoggedIOMessageRepository(database());
+
+            const logged = await repository.persistIOMessages([secondMessage, inboundMessage]);
+
+            expect(logged).toHaveLength(2);
+            expect(logged).toEqual(expect.arrayContaining([first, second]));
+            const firstExternal = await selectFromDb(LOGGED_IO_MESSAGE_TABLE, {
+                externalId: externalIds.matching,
+            });
+            expect(firstExternal).toHaveLength(2);
+            expect(firstExternal).toEqual(expect.arrayContaining([first, unrelatedFirst]));
+            const secondExternal = await selectFromDb(LOGGED_IO_MESSAGE_TABLE, {
+                externalId: externalIds.other,
+            });
+            expect(secondExternal).toHaveLength(2);
+            expect(secondExternal).toEqual(expect.arrayContaining([second, unrelatedSecond]));
+        });
+
+        test('allows an existing message ID to be logged under another external ID', async () => {
+            const existing = await createInDb(LOGGED_IO_MESSAGE_TABLE, {
+                ...inboundMessage,
+                storyId: null,
+                isHandled: false,
+            });
+            const message = { ...inboundMessage, externalId: externalIds.other };
+            const repository = new KyselyLoggedIOMessageRepository(database());
+
+            const logged = await repository.persistIOMessages([message]);
+
+            expect(logged).toEqual([
+                { ...message, id: expect.any(Number), storyId: null, isHandled: false },
+            ]);
+            expect(logged.map((item) => item.id)).not.toContain(existing.id);
+            await expect(
+                selectFromDb(LOGGED_IO_MESSAGE_TABLE, { externalId: externalIds.matching }),
+            ).resolves.toEqual([existing]);
+            await expect(
+                selectFromDb(LOGGED_IO_MESSAGE_TABLE, { externalId: externalIds.other }),
+            ).resolves.toEqual(logged);
+        });
+
+        test.each([
+            {
+                type: 'inbound',
+                messages: [inboundMessage, { ...inboundMessage, content: 'Duplicate.' }],
+                isHandled: false,
+            },
+            {
+                type: 'outbound',
+                messages: [outboundMessage, { ...outboundMessage, content: 'Duplicate.' }],
+                isHandled: true,
+            },
+        ])(
+            'keeps the first new $type message when a pair is repeated in a batch',
+            async ({ messages, isHandled }) => {
+                const repository = new KyselyLoggedIOMessageRepository(database());
+
+                const logged = await repository.persistIOMessages(messages);
+
+                expect(logged).toEqual([
+                    { ...messages[0], id: expect.any(Number), storyId: null, isHandled },
+                ]);
+                await expect(
+                    selectFromDb(LOGGED_IO_MESSAGE_TABLE, { externalId: externalIds.matching }),
+                ).resolves.toEqual(logged);
+            },
+        );
+
+        test('returns an existing message once when a pair is repeated in a batch', async () => {
+            const stored = await createInDb(LOGGED_IO_MESSAGE_TABLE, {
+                ...inboundMessage,
+                storyId: null,
+                isHandled: false,
+            });
+            const repository = new KyselyLoggedIOMessageRepository(database());
 
             await expect(
-                repository.findAllInboundByExternalIdAndMessageId(externalIds.matching, [
-                    inboundMessage.messageId,
-                    inboundMessage.messageId,
-                ]),
-            ).resolves.toEqual([logged]);
+                repository.persistIOMessages([inboundMessage, inboundMessage]),
+            ).resolves.toEqual([stored]);
+            await expect(
+                selectFromDb(LOGGED_IO_MESSAGE_TABLE, { externalId: externalIds.matching }),
+            ).resolves.toEqual([stored]);
+        });
+
+        test('keeps distinct pairs separate when their IDs contain overlapping hyphens', async () => {
+            const existingMessage = {
+                ...inboundMessage,
+                externalId: externalIds.overlapping,
+                messageId: createId('message'),
+            };
+            const existing = await createInDb(LOGGED_IO_MESSAGE_TABLE, {
+                ...existingMessage,
+                storyId: null,
+                isHandled: false,
+            });
+            const newMessage = { ...inboundMessage, messageId: createId('part-message') };
+            const repository = new KyselyLoggedIOMessageRepository(database());
+
+            const logged = await repository.persistIOMessages([existingMessage, newMessage]);
+
+            const expected = {
+                ...newMessage,
+                id: expect.any(Number),
+                storyId: null,
+                isHandled: false,
+            };
+            expect(logged).toHaveLength(2);
+            expect(logged).toEqual(expect.arrayContaining([existing, expected]));
+            await expect(
+                selectFromDb(LOGGED_IO_MESSAGE_TABLE, {
+                    externalId: externalIds.matching,
+                }),
+            ).resolves.toEqual([expected]);
+            await expect(
+                selectFromDb(LOGGED_IO_MESSAGE_TABLE, {
+                    externalId: externalIds.overlapping,
+                }),
+            ).resolves.toEqual([existing]);
         });
     });
 
@@ -320,16 +365,30 @@ describe('KyselyLoggedIOMessageRepository', () => {
                 });
                 const story: Story = { ...row, externalId: externalIds.matching };
                 const repository = new KyselyLoggedIOMessageRepository(db);
-                const inbound = await repository.logMessageInbound(inboundMessage);
-                const outbound = await repository.logMessageOutbound({
+                const inbound = await createInDb(LOGGED_IO_MESSAGE_TABLE, {
+                    ...inboundMessage,
+                    storyId: null,
+                    isHandled: false,
+                });
+                const outbound = await createInDb(LOGGED_IO_MESSAGE_TABLE, {
                     ...outboundMessage,
                     messageId: createId('outbound-message'),
+                    storyId: null,
+                    isHandled: true,
                 });
-                const unrelated = await repository.logMessageInbound({
+                const unrelated = await createInDb(LOGGED_IO_MESSAGE_TABLE, {
                     ...inboundMessage,
                     messageId: createId('unrelated-message'),
+                    storyId: null,
+                    isHandled: false,
                 });
-                const ids = messages === 'logs' ? [inbound, outbound] : [inbound.id, outbound.id];
+                const logs = [inbound, outbound].map((message) => ({
+                    ...message,
+                    messageId: createId(message.messageId),
+                    externalId: createId(message.externalId),
+                    userId: createId(message.userId),
+                }));
+                const ids = messages === 'logs' ? logs : [inbound.id, outbound.id];
                 const storyContext = context === 'story' ? story : story.id;
 
                 await repository.markAllHandled(ids, storyContext);
@@ -353,7 +412,11 @@ describe('KyselyLoggedIOMessageRepository', () => {
                 status: 'new',
             });
             const repository = new KyselyLoggedIOMessageRepository(database());
-            const logged = await repository.logMessageInbound(inboundMessage);
+            const logged = await createInDb(LOGGED_IO_MESSAGE_TABLE, {
+                ...inboundMessage,
+                storyId: null,
+                isHandled: false,
+            });
 
             await expect(repository.markAllHandled([], row.id)).resolves.toBeUndefined();
 
@@ -368,10 +431,16 @@ describe('KyselyLoggedIOMessageRepository', () => {
                 status: 'new',
             });
             const repository = new KyselyLoggedIOMessageRepository(database());
-            const logged = await repository.logMessageInbound(inboundMessage);
-            const removed = await repository.logMessageInbound({
+            const logged = await createInDb(LOGGED_IO_MESSAGE_TABLE, {
+                ...inboundMessage,
+                storyId: null,
+                isHandled: false,
+            });
+            const removed = await createInDb(LOGGED_IO_MESSAGE_TABLE, {
                 ...inboundMessage,
                 messageId: createId('removed-message'),
+                storyId: null,
+                isHandled: false,
             });
             await deleteFromDb(LOGGED_IO_MESSAGE_TABLE, { id: removed.id });
 
@@ -382,32 +451,20 @@ describe('KyselyLoggedIOMessageRepository', () => {
             );
         });
 
-        test.each([Number.NaN, Number.POSITIVE_INFINITY, 1.5])(
-            'rejects a non-integer story ID %p before updating messages',
-            async (storyId) => {
-                const repository = new KyselyLoggedIOMessageRepository(database());
-                const logged = await repository.logMessageInbound(inboundMessage);
-
-                await expect(repository.markAllHandled([logged], storyId)).rejects.toThrow(
-                    'Story ID must be an integer.',
-                );
-
-                await expect(
-                    selectFromDb(LOGGED_IO_MESSAGE_TABLE, { id: logged.id }),
-                ).resolves.toEqual([logged]);
-            },
-        );
-
         test('rejects marking messages handled without an existing story', async () => {
             const row = await createInDb(STORY_TABLE, {
                 externalId: externalIds.matching,
                 status: 'new',
             });
             const repository = new KyselyLoggedIOMessageRepository(database());
-            const logged = await repository.logMessageInbound(inboundMessage);
+            const logged = await createInDb(LOGGED_IO_MESSAGE_TABLE, {
+                ...inboundMessage,
+                storyId: null,
+                isHandled: false,
+            });
             await deleteFromDb(STORY_TABLE, { id: row.id });
 
-            await expect(repository.markAllHandled([logged], row.id)).rejects.toMatchObject({
+            await expect(repository.markAllHandled([logged.id], row.id)).rejects.toMatchObject({
                 code: '23503',
             });
         });

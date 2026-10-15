@@ -13,4 +13,6 @@ export interface IOMessage {
     userId: Id;
     /** Message content */
     content: string;
+    /** Timestamp when the message was created */
+    createdAt: Date;
 }

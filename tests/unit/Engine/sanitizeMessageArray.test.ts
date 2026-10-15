@@ -10,6 +10,7 @@ const createMessage = (
     createdAt: string,
     externalId = 'session-one',
 ): IOMessageInbound => ({
+    type: 'inbound',
     messageId: createId(messageId),
     externalId: createId(externalId),
     userId: createId('user-one'),
