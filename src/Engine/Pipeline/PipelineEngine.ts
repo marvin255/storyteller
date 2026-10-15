@@ -59,15 +59,15 @@ export class PipelineEngine implements Engine {
             const logger = this.logger.child({ operation: operation.constructor.name });
             const context = this.createOperationContext(story, messages, logger);
             try {
-                this.logger.info('Operation started', { context });
+                logger.info('Operation started', { context });
                 const result = await operation.run(context);
-                this.logger.info('Operation completed', { result, context });
+                logger.info('Operation completed', { result, context });
                 if (result.stopProcessing) {
-                    this.logger.info('Pipeline stopped');
+                    logger.info('Pipeline stopped');
                     break;
                 }
             } catch (error) {
-                this.logger.error('Operation failed', error, { context });
+                logger.error('Operation failed', error, { context });
                 throw error;
             }
         }
