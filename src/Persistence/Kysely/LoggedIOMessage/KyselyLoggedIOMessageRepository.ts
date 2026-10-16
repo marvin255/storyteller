@@ -48,6 +48,23 @@ export class KyselyLoggedIOMessageRepository implements LoggedIOMessageRepositor
             return true;
         });
 
+        const newMessages: NewKyselyLoggedIOMessage[] = deduplicatedMessages.map((message) => ({
+            messageId: message.messageId,
+            externalId: message.externalId,
+            userId: message.userId,
+            content: message.content,
+            createdAt: message.createdAt,
+            storyId: null,
+            type: message.type,
+            isHandled: message.type === 'outbound',
+        }));
+
+        await this.db
+            .insertInto(LOGGED_IO_MESSAGE_TABLE)
+            .values(newMessages)
+            .onConflict((oc) => oc.columns(['externalId', 'messageId']).doNothing())
+            .execute();
+
         const rows = await this.db
             .selectFrom(LOGGED_IO_MESSAGE_TABLE)
             .selectAll()
@@ -63,42 +80,10 @@ export class KyselyLoggedIOMessageRepository implements LoggedIOMessageRepositor
                 });
                 return eb.or(ors);
             })
+            .orderBy('createdAt', 'asc')
             .execute();
 
-        const existingMessageKeys = new Set();
-        const existingMessages = rows.map((row) => {
-            existingMessageKeys.add(this.createMessageKey(row));
-            return convertKyselyToDomain(row);
-        });
-
-        const newMessages: NewKyselyLoggedIOMessage[] = deduplicatedMessages
-            .filter((message) => !existingMessageKeys.has(this.createMessageKey(message)))
-            .map((message) => ({
-                messageId: message.messageId,
-                externalId: message.externalId,
-                userId: message.userId,
-                content: message.content,
-                createdAt: message.createdAt,
-                storyId: null,
-                type: message.type,
-                isHandled: message.type === 'outbound',
-            }));
-
-        let insertedMessages: LoggedIOMessage[] = [];
-        if (newMessages.length > 0) {
-            const insertedRows = await this.db
-                .insertInto(LOGGED_IO_MESSAGE_TABLE)
-                .values(newMessages)
-                .returningAll()
-                .execute();
-            insertedMessages = insertedRows.map(convertKyselyToDomain);
-        }
-
-        const allMessages = [...existingMessages, ...insertedMessages].sort(
-            (a, b) => a.createdAt.getTime() - b.createdAt.getTime(),
-        );
-
-        return Promise.resolve(allMessages);
+        return rows.map(convertKyselyToDomain);
     }
 
     async markAllHandled(ids: number[] | LoggedIOMessage[], story: Story | number): Promise<void> {
