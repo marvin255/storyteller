@@ -1,6 +1,7 @@
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, test } from '@jest/globals';
 import type { Kysely } from 'kysely';
 
+import type { Story } from '../../../../../src/Contracts/Domain/Story/Story.js';
 import type { StoryStatus } from '../../../../../src/Contracts/Domain/Story/StoryStatus.js';
 import { createId } from '../../../../../src/Contracts/Shared/Id.js';
 import type { KyselyDatabase } from '../../../../../src/Persistence/Kysely/KyselyDatabase.js';
@@ -38,6 +39,106 @@ describe('KyselyStoryRepository', () => {
 
     afterAll(async () => {
         await db.destroy();
+    });
+
+    describe('save', () => {
+        test.each<StoryStatus>(['new', 'in-progress', 'closed'])(
+            'persists the %s status only for the requested story ID',
+            async (status) => {
+                const stored = await createInDb(STORY_TABLE, {
+                    externalId: externalIds.matching,
+                    status: status === 'closed' ? 'new' : 'closed',
+                });
+                const sameExternalId = await createInDb(STORY_TABLE, {
+                    externalId: externalIds.matching,
+                    status: 'closed',
+                });
+                const unrelated = await createInDb(STORY_TABLE, {
+                    externalId: externalIds.other,
+                    status: 'new',
+                });
+                const repository = new KyselyStoryRepository(database());
+                const story: Story = { ...stored, externalId: externalIds.matching, status };
+
+                await expect(repository.save(story)).resolves.toBeUndefined();
+                await repository.save(story);
+
+                const matching = await selectFromDb(STORY_TABLE, {
+                    externalId: externalIds.matching,
+                });
+                expect(matching).toHaveLength(2);
+                expect(matching).toEqual(expect.arrayContaining([story, sameExternalId]));
+                await expect(
+                    selectFromDb(STORY_TABLE, { externalId: externalIds.other }),
+                ).resolves.toEqual([unrelated]);
+            },
+        );
+
+        test('persists a changed external ID and status without changing the story ID', async () => {
+            const stored = await createInDb(STORY_TABLE, {
+                externalId: externalIds.matching,
+                status: 'new',
+            });
+            const repository = new KyselyStoryRepository(database());
+            const story: Story = {
+                ...stored,
+                externalId: externalIds.other,
+                status: 'in-progress',
+            };
+
+            await repository.save(story);
+
+            await expect(
+                selectFromDb(STORY_TABLE, { externalId: externalIds.matching }),
+            ).resolves.toEqual([]);
+            await expect(
+                selectFromDb(STORY_TABLE, { externalId: externalIds.other }),
+            ).resolves.toEqual([story]);
+        });
+
+        test('does not insert a missing story or update another story with the same external ID', async () => {
+            const stored = await createInDb(STORY_TABLE, {
+                externalId: externalIds.matching,
+                status: 'new',
+            });
+            const removed = await createInDb(STORY_TABLE, {
+                externalId: externalIds.matching,
+                status: 'closed',
+            });
+            await deleteFromDb(STORY_TABLE, { id: removed.id });
+            const repository = new KyselyStoryRepository(database());
+
+            await expect(
+                repository.save({
+                    ...removed,
+                    externalId: externalIds.matching,
+                    status: 'in-progress',
+                }),
+            ).resolves.toBeUndefined();
+
+            await expect(
+                selectFromDb(STORY_TABLE, { externalId: externalIds.matching }),
+            ).resolves.toEqual([stored]);
+        });
+
+        test('allows a new active story to be created after saving a closed status', async () => {
+            const repository = new KyselyStoryRepository(database());
+            const story = await repository.findOrCreateActiveStoryForExternalId(
+                externalIds.matching,
+            );
+            const closed: Story = { ...story, status: 'closed' };
+
+            await repository.save(closed);
+
+            const active = await repository.findOrCreateActiveStoryForExternalId(
+                externalIds.matching,
+            );
+            expect(active.id).not.toBe(closed.id);
+            expect(active.status).toBe('new');
+            const stored = await selectFromDb(STORY_TABLE, { externalId: externalIds.matching });
+            expect(stored).toHaveLength(2);
+            expect(stored).toEqual(expect.arrayContaining([closed, active]));
+        });
     });
 
     describe('findOrCreateActiveStoryForExternalId', () => {

@@ -25,6 +25,14 @@ const convertKyselyToDomain = (kyselyStory: KyselyStory): Story => {
 export class KyselyStoryRepository implements StoryRepository {
     constructor(private db: Kysely<KyselyDatabase>) {}
 
+    async save(story: Story): Promise<void> {
+        await this.db
+            .updateTable(STORY_TABLE)
+            .set({ externalId: story.externalId, status: story.status })
+            .where('id', '=', story.id)
+            .execute();
+    }
+
     async findOrCreateActiveStoryForExternalId(externalId: Id): Promise<Story> {
         // Namespace and hash the external ID into a stable signed 64-bit advisory lock key.
         const lockKey = createHash('sha256')
