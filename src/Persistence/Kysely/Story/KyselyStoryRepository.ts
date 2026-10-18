@@ -1,4 +1,6 @@
-import type { Kysely } from 'kysely';
+import { createHash } from 'node:crypto';
+
+import { type Kysely, sql } from 'kysely';
 
 import type { Story } from '../../../Contracts/Domain/Story/Story.js';
 import type { StoryRepository } from '../../../Contracts/Domain/Story/StoryRepository.js';
@@ -23,27 +25,39 @@ const convertKyselyToDomain = (kyselyStory: KyselyStory): Story => {
 export class KyselyStoryRepository implements StoryRepository {
     constructor(private db: Kysely<KyselyDatabase>) {}
 
-    async findActiveStoryByExternalId(externalId: Id): Promise<Story | null> {
-        const row = await this.db
-            .selectFrom(STORY_TABLE)
-            .selectAll()
-            .where('externalId', '=', externalId)
-            .where('status', '!=', 'closed')
-            .executeTakeFirst();
+    async findOrCreateActiveStoryForExternalId(externalId: Id): Promise<Story> {
+        // Namespace and hash the external ID into a stable signed 64-bit advisory lock key.
+        const lockKey = createHash('sha256')
+            .update(`story:${externalId}`)
+            .digest()
+            .readBigInt64BE(0)
+            .toString();
 
-        return row ? convertKyselyToDomain(row) : null;
-    }
+        return this.db
+            .transaction()
+            .setIsolationLevel('read committed')
+            .execute(async (trx) => {
+                await sql`SET LOCAL lock_timeout = '5s'`.execute(trx);
+                await sql`SELECT pg_advisory_xact_lock(${lockKey}::bigint)`.execute(trx);
 
-    async createNewStoryForExternalId(externalId: Id): Promise<Story> {
-        const row = await this.db
-            .insertInto(STORY_TABLE)
-            .values({
-                externalId: externalId,
-                status: 'new',
-            })
-            .returningAll()
-            .executeTakeFirstOrThrow();
+                const existing = await trx
+                    .selectFrom(STORY_TABLE)
+                    .selectAll()
+                    .where('externalId', '=', externalId)
+                    .where('status', '!=', 'closed')
+                    .executeTakeFirst();
 
-        return convertKyselyToDomain(row);
+                if (existing) {
+                    return convertKyselyToDomain(existing);
+                }
+
+                const created = await trx
+                    .insertInto(STORY_TABLE)
+                    .values({ externalId, status: 'new' })
+                    .returningAll()
+                    .executeTakeFirstOrThrow();
+
+                return convertKyselyToDomain(created);
+            });
     }
 }

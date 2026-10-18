@@ -43,14 +43,13 @@ export class PipelineEngine implements Engine {
             this.logger.warn('No external ID found in messages', { message });
             return Promise.resolve();
         }
+        this.logger = this.logger.child({ externalId });
 
         const story = await this.loadOrCreateStory(externalId);
+        this.logger = this.logger.child({ storyId: story.id });
 
-        this.logger = this.logger.child({ externalId });
         this.logger.info('Start message processing', { messages });
-
         await this.runAllOperations(story, messages);
-
         this.logger.info('Message processing completed');
     }
 
@@ -103,31 +102,15 @@ export class PipelineEngine implements Engine {
     private async loadOrCreateStory(externalId: Id): Promise<Story> {
         const storyRepository = await this.entityManager.getRepository(StoryRepository);
 
-        let story: Story | null;
+        let story: Story;
         try {
-            story = await storyRepository.findActiveStoryByExternalId(externalId);
+            story = await storyRepository.findOrCreateActiveStoryForExternalId(externalId);
         } catch (error) {
-            this.logger.error('Failed to load story', error);
-            throw error;
-        }
-        if (story) {
-            this.logger = this.logger.child({ storyId: story.id });
-            this.logger.info('Found existing story');
-            return Promise.resolve(story);
-        }
-
-        let newStory: Story;
-        try {
-            newStory = await storyRepository.createNewStoryForExternalId(externalId);
-        } catch (error) {
-            this.logger.error('Failed to create story', error);
+            this.logger.error('Failed to load or create story', error);
             throw error;
         }
 
-        this.logger = this.logger.child({ storyId: newStory.id });
-        this.logger.info('New story created');
-
-        return Promise.resolve(newStory);
+        return story;
     }
 
     /**

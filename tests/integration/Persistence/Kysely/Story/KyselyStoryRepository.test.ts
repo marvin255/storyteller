@@ -1,16 +1,20 @@
-import { beforeEach, describe, expect, test } from '@jest/globals';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, test } from '@jest/globals';
+import type { Kysely } from 'kysely';
 
 import type { StoryStatus } from '../../../../../src/Contracts/Domain/Story/StoryStatus.js';
 import { createId } from '../../../../../src/Contracts/Shared/Id.js';
+import type { KyselyDatabase } from '../../../../../src/Persistence/Kysely/KyselyDatabase.js';
 import { STORY_TABLE } from '../../../../../src/Persistence/Kysely/Story/KyselyStory.js';
 import { KyselyStoryRepository } from '../../../../../src/Persistence/Kysely/Story/KyselyStoryRepository.js';
 import { createDeleteHelper } from '../../../../helper/Database/createDeleteHelper.js';
 import { createInsertHelper } from '../../../../helper/Database/createInsertHelper.js';
 import { createSelectHelper } from '../../../../helper/Database/createSelectHelper.js';
-import { useTestDatabase } from '../../../../helper/Database/useTestDatabase.js';
+import { createTestDatabase } from '../../../../helper/Database/createTestDatabase.js';
 
 describe('KyselyStoryRepository', () => {
-    const database = useTestDatabase();
+    // The repository owns its transaction, so fixtures must be committed before calls.
+    let db: Kysely<KyselyDatabase>;
+    const database = () => db;
     const createInDb = createInsertHelper(database);
     const deleteFromDb = createDeleteHelper(database);
     const selectFromDb = createSelectHelper(database);
@@ -19,19 +23,40 @@ describe('KyselyStoryRepository', () => {
         other: createId('KyselyStoryRepository-456'),
     };
 
-    beforeEach(async () => {
+    beforeAll(async () => {
+        db = await createTestDatabase();
+    });
+
+    const cleanUpStories = async () => {
         for (const externalId of Object.values(externalIds)) {
             await deleteFromDb(STORY_TABLE, { externalId });
         }
+    };
+
+    beforeEach(cleanUpStories);
+    afterEach(cleanUpStories);
+
+    afterAll(async () => {
+        await db.destroy();
     });
 
-    describe('findActiveStoryByExternalId', () => {
-        test('returns null when no story exists', async () => {
+    describe('findOrCreateActiveStoryForExternalId', () => {
+        test('creates and returns a new domain story with a generated ID when none exists', async () => {
             const repository = new KyselyStoryRepository(database());
 
+            const story = await repository.findOrCreateActiveStoryForExternalId(
+                externalIds.matching,
+            );
+
+            expect(story).toEqual({
+                id: expect.any(Number),
+                externalId: externalIds.matching,
+                status: 'new',
+            });
+            expect(story.id).toBeGreaterThan(0);
             await expect(
-                repository.findActiveStoryByExternalId(externalIds.matching),
-            ).resolves.toBeNull();
+                selectFromDb(STORY_TABLE, { externalId: externalIds.matching }),
+            ).resolves.toEqual([story]);
         });
 
         test.each<StoryStatus>(['new', 'in-progress'])(
@@ -45,36 +70,65 @@ describe('KyselyStoryRepository', () => {
                 const repository = new KyselyStoryRepository(db);
 
                 await expect(
-                    repository.findActiveStoryByExternalId(externalIds.matching),
+                    repository.findOrCreateActiveStoryForExternalId(externalIds.matching),
                 ).resolves.toEqual({
                     id: inserted.id,
                     externalId: externalIds.matching,
                     status,
                 });
+                await expect(
+                    selectFromDb(STORY_TABLE, { externalId: externalIds.matching }),
+                ).resolves.toEqual([inserted]);
             },
         );
 
-        test('returns null when only closed stories match', async () => {
+        test('creates a new story when only closed stories match', async () => {
             const db = database();
-            await createInDb(STORY_TABLE, { externalId: externalIds.matching, status: 'closed' });
+            const closed = await createInDb(STORY_TABLE, {
+                externalId: externalIds.matching,
+                status: 'closed',
+            });
             const repository = new KyselyStoryRepository(db);
 
+            const story = await repository.findOrCreateActiveStoryForExternalId(
+                externalIds.matching,
+            );
+
+            expect(story).toEqual({
+                id: expect.any(Number),
+                externalId: externalIds.matching,
+                status: 'new',
+            });
+            expect(story.id).not.toBe(closed.id);
             await expect(
-                repository.findActiveStoryByExternalId(externalIds.matching),
-            ).resolves.toBeNull();
+                selectFromDb(STORY_TABLE, { externalId: externalIds.matching }),
+            ).resolves.toEqual(expect.arrayContaining([closed, story]));
         });
 
-        test('returns null when an active story belongs to another external ID', async () => {
+        test('creates a separate story when an active story belongs to another external ID', async () => {
             const db = database();
-            await createInDb(STORY_TABLE, {
+            const unrelated = await createInDb(STORY_TABLE, {
                 externalId: externalIds.other,
                 status: 'new',
             });
             const repository = new KyselyStoryRepository(db);
 
+            const story = await repository.findOrCreateActiveStoryForExternalId(
+                externalIds.matching,
+            );
+
+            expect(story).toEqual({
+                id: expect.any(Number),
+                externalId: externalIds.matching,
+                status: 'new',
+            });
+            expect(story.id).not.toBe(unrelated.id);
             await expect(
-                repository.findActiveStoryByExternalId(externalIds.matching),
-            ).resolves.toBeNull();
+                selectFromDb(STORY_TABLE, { externalId: externalIds.matching }),
+            ).resolves.toEqual([story]);
+            await expect(
+                selectFromDb(STORY_TABLE, { externalId: externalIds.other }),
+            ).resolves.toEqual([unrelated]);
         });
 
         test('returns the matching active story among closed and unrelated stories', async () => {
@@ -91,27 +145,23 @@ describe('KyselyStoryRepository', () => {
             const repository = new KyselyStoryRepository(db);
 
             await expect(
-                repository.findActiveStoryByExternalId(externalIds.matching),
+                repository.findOrCreateActiveStoryForExternalId(externalIds.matching),
             ).resolves.toEqual({
                 id: inserted.id,
                 externalId: externalIds.matching,
                 status: 'in-progress',
             });
         });
-    });
 
-    describe('createNewStoryForExternalId', () => {
-        test('creates and returns a new domain story with a generated ID', async () => {
+        test('returns the same story on repeated calls', async () => {
             const repository = new KyselyStoryRepository(database());
+            const story = await repository.findOrCreateActiveStoryForExternalId(
+                externalIds.matching,
+            );
 
-            const story = await repository.createNewStoryForExternalId(externalIds.matching);
-
-            expect(story).toEqual({
-                id: expect.any(Number),
-                externalId: externalIds.matching,
-                status: 'new',
-            });
-            expect(story.id).toBeGreaterThan(0);
+            await expect(
+                repository.findOrCreateActiveStoryForExternalId(externalIds.matching),
+            ).resolves.toEqual(story);
             await expect(
                 selectFromDb(STORY_TABLE, { externalId: externalIds.matching }),
             ).resolves.toEqual([story]);
