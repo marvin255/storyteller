@@ -25,28 +25,32 @@ export class PipelineEngine implements Engine {
         if (this.operations.length === 0) {
             throw new Error('PipelineEngine requires at least one operation to function.');
         }
-        this.logger = this.logger.child({ source: 'PipelineEngine', runId: createRandomId() });
     }
 
     /**
      * Handles incoming messages by processing them through the pipeline.
      */
     async handle(message: IncomingMessage): Promise<void> {
-        const messages = await this.sanitizeAndLogIOMessages(message);
+        let pipelineLogger = this.logger.child({
+            source: 'PipelineEngine',
+            runId: createRandomId(),
+        });
+
+        const messages = await this.sanitizeAndLogIOMessages(message, pipelineLogger);
         if (messages.length === 0) {
-            this.logger.warn('No messages found to process', { message });
+            pipelineLogger.warn('No messages found to process', { message });
             return Promise.resolve();
         }
 
         const externalId = this.getExternalIdFromMessages(messages);
         if (!externalId) {
-            this.logger.warn('No external ID found in messages', { message });
+            pipelineLogger.warn('No external ID found in messages', { message });
             return Promise.resolve();
         }
-        let pipelineLogger = this.logger.child({ externalId });
+        pipelineLogger = pipelineLogger.child({ externalId });
 
         const story = await this.loadOrCreateStory(externalId, pipelineLogger);
-        pipelineLogger = this.logger.child({ storyId: story.id });
+        pipelineLogger = pipelineLogger.child({ storyId: story.id });
 
         pipelineLogger.info('Start message processing', { messages });
         await this.runAllOperations(story, messages, pipelineLogger);
@@ -56,13 +60,16 @@ export class PipelineEngine implements Engine {
     /**
      * Sanitizes incoming messages, then persists them to the database.
      */
-    private async sanitizeAndLogIOMessages(message: IncomingMessage): Promise<LoggedIOMessage[]> {
-        const sanitizedMessages = sanitizeMessageArray(message, this.logger);
+    private async sanitizeAndLogIOMessages(
+        message: IncomingMessage,
+        logger: Logger,
+    ): Promise<LoggedIOMessage[]> {
+        const sanitizedMessages = sanitizeMessageArray(message, logger);
         let messages: LoggedIOMessage[];
         try {
-            messages = await this.persistMessages(sanitizedMessages);
+            messages = await this.persistMessages(sanitizedMessages, logger);
         } catch (error) {
-            this.logger.error('Failed to persist messages', error, { message });
+            logger.error('Failed to persist messages', error, { message });
             throw error;
         }
         return Promise.resolve(messages);
@@ -71,15 +78,18 @@ export class PipelineEngine implements Engine {
     /**
      * Persists the incoming messages and filters out those that are already handled or not inbound.
      */
-    private async persistMessages(messages: IOMessageInbound[]): Promise<LoggedIOMessage[]> {
+    private async persistMessages(
+        messages: IOMessageInbound[],
+        logger: Logger,
+    ): Promise<LoggedIOMessage[]> {
         const repo = await this.entityManager.getRepository(LoggedIOMessageRepository);
         const persistedMessages = await repo.persistIOMessages(messages);
         const unhandledInboundMessages = persistedMessages.filter((message) => {
             if (message.isHandled) {
-                this.logger.warn('Message was already handled', { message });
+                logger.warn('Message was already handled', { message });
             }
             if (message.type !== 'inbound') {
-                this.logger.warn('Message is not inbound', { message });
+                logger.warn('Message is not inbound', { message });
             }
             return !message.isHandled && message.type === 'inbound';
         });
