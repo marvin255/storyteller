@@ -11,6 +11,8 @@ import { sanitizeMessageArray } from '../sanitizeMessageArray.js';
 import type { PipelineOperation } from './PipelineOperation.js';
 import type { PipelineOperationResult } from './PipelineOperationResult.js';
 
+type IncomingMessage = IOMessageInbound | IOMessageInbound[];
+
 /**
  * Narrative engine that processes messages through a pipeline of operations.
  */
@@ -29,39 +31,42 @@ export class PipelineEngine implements Engine {
     /**
      * Handles incoming messages by processing them through the pipeline.
      */
-    async handle(message: IOMessageInbound | IOMessageInbound[]): Promise<void> {
-        let messages;
-        try {
-            messages = await this.persistMessages(sanitizeMessageArray(message, this.logger));
-        } catch (error) {
-            this.logger.error('Failed to persist messages', error, { message });
-            throw error;
-        }
+    async handle(message: IncomingMessage): Promise<void> {
+        const messages = await this.sanitizeAndLogIOMessages(message);
         if (messages.length === 0) {
             this.logger.warn('No messages found to process', { message });
             return Promise.resolve();
         }
 
-        const externalId = this.getExternalId(messages);
+        const externalId = this.getExternalIdFromMessages(messages);
         if (!externalId) {
             this.logger.warn('No external ID found in messages', { message });
             return Promise.resolve();
         }
 
+        const story = await this.loadOrCreateStory(externalId);
+
         this.logger = this.logger.child({ externalId });
         this.logger.info('Start message processing', { messages });
-
-        let story: Story;
-        try {
-            story = await this.loadOrCreateStory(externalId);
-        } catch (error) {
-            this.logger.error('Failed to load or create story', error);
-            throw error;
-        }
 
         await this.runAllOperations(story, messages);
 
         this.logger.info('Message processing completed');
+    }
+
+    /**
+     * Sanitizes incoming messages, then persists them to the database.
+     */
+    private async sanitizeAndLogIOMessages(message: IncomingMessage): Promise<LoggedIOMessage[]> {
+        const sanitizedMessages = sanitizeMessageArray(message, this.logger);
+        let messages: LoggedIOMessage[];
+        try {
+            messages = await this.persistMessages(sanitizedMessages);
+        } catch (error) {
+            this.logger.error('Failed to persist messages', error, { message });
+            throw error;
+        }
+        return Promise.resolve(messages);
     }
 
     /**
@@ -85,7 +90,7 @@ export class PipelineEngine implements Engine {
     /**
      * Extracts the external ID from the first message in the array.
      */
-    private getExternalId(messages: LoggedIOMessage[]): Id | undefined {
+    private getExternalIdFromMessages(messages: LoggedIOMessage[]): Id | undefined {
         if (messages.length === 0 || !messages[0]?.externalId) {
             return undefined;
         }
@@ -98,14 +103,26 @@ export class PipelineEngine implements Engine {
     private async loadOrCreateStory(externalId: Id): Promise<Story> {
         const storyRepository = await this.entityManager.getRepository(StoryRepository);
 
-        const story = await storyRepository.findActiveStoryByExternalId(externalId);
+        let story: Story | null;
+        try {
+            story = await storyRepository.findActiveStoryByExternalId(externalId);
+        } catch (error) {
+            this.logger.error('Failed to load story', error);
+            throw error;
+        }
         if (story) {
             this.logger = this.logger.child({ storyId: story.id });
             this.logger.info('Found existing story');
             return Promise.resolve(story);
         }
 
-        const newStory = await storyRepository.createNewStoryForExternalId(externalId);
+        let newStory: Story;
+        try {
+            newStory = await storyRepository.createNewStoryForExternalId(externalId);
+        } catch (error) {
+            this.logger.error('Failed to create story', error);
+            throw error;
+        }
 
         this.logger = this.logger.child({ storyId: newStory.id });
         this.logger.info('New story created');
