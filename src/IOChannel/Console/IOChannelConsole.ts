@@ -60,7 +60,7 @@ export class IOChannelConsole implements IOChannelListener, IOChannelSender {
         });
     }
 
-    send(message: IOMessageOutbound | IOMessageOutbound[]): void {
+    send(message: IOMessageOutbound | IOMessageOutbound[]): Promise<void> {
         const messages = Array.isArray(message) ? message : [message];
         messages
             .map((outboundMessage) => this.formatOutboundMessage(outboundMessage))
@@ -68,6 +68,7 @@ export class IOChannelConsole implements IOChannelListener, IOChannelSender {
                 this.write(formattedMessage);
             });
         this.writetMessagePlaceholder();
+        return Promise.resolve();
     }
 
     private async handleLine(

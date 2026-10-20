@@ -56,7 +56,7 @@ describe('IOChannelConsole', () => {
         expect(readlineInstance.on).toHaveBeenCalledWith('line', expect.any(Function));
     });
 
-    test('uses default streams and ids when constructor arguments are omitted', () => {
+    test('uses default streams and ids when constructor arguments are omitted', async () => {
         const engine = createEngine();
         const readlineInstance = createReadlineMock();
         const createInterface = jest
@@ -67,7 +67,7 @@ describe('IOChannelConsole', () => {
         const consoleChannel = new IOChannelConsole();
 
         consoleChannel.attachEngine(engine);
-        consoleChannel.send({
+        await consoleChannel.send({
             type: 'outbound',
             messageId: createId('message'),
             externalId: createId('reply-session'),
@@ -236,7 +236,7 @@ describe('IOChannelConsole', () => {
         expect(engine.handle).not.toHaveBeenCalled();
     });
 
-    test('sends one outbound message to the output stream', () => {
+    test('sends one outbound message to the output stream', async () => {
         const output = createOutput();
         const consoleChannel = new IOChannelConsole(
             new PassThrough(),
@@ -246,7 +246,7 @@ describe('IOChannelConsole', () => {
             externalId,
         );
 
-        consoleChannel.send({
+        const sending = consoleChannel.send({
             type: 'outbound',
             messageId: createId('message'),
             externalId: createId('reply-session'),
@@ -255,12 +255,13 @@ describe('IOChannelConsole', () => {
             createdAt: new Date('2026-01-01T00:00:00Z'),
         });
 
+        await expect(sending).resolves.toBeUndefined();
         expect(output.write).toHaveBeenCalledWith(
             'channel (reply-session) > A lantern flickers.\n',
         );
     });
 
-    test('sends each outbound message when given an array', () => {
+    test('sends each outbound message when given an array', async () => {
         const output = createOutput();
         const consoleChannel = new IOChannelConsole(
             new PassThrough(),
@@ -270,7 +271,7 @@ describe('IOChannelConsole', () => {
             externalId,
         );
 
-        consoleChannel.send([
+        const sending = consoleChannel.send([
             {
                 type: 'outbound',
                 messageId: createId('first'),
@@ -289,6 +290,7 @@ describe('IOChannelConsole', () => {
             },
         ]);
 
+        await expect(sending).resolves.toBeUndefined();
         expect(output.write).toHaveBeenNthCalledWith(1, 'channel (reply-session) > First line.\n');
         expect(output.write).toHaveBeenNthCalledWith(2, 'channel (reply-session) > Second line.\n');
     });
