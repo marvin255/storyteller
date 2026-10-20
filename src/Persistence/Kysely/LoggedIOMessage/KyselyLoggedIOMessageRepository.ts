@@ -33,6 +33,7 @@ export class KyselyLoggedIOMessageRepository implements LoggedIOMessageRepositor
 
     async persistIOMessages(
         messages: IOMessageInbound[] | IOMessageOutbound[],
+        story?: Story | number,
     ): Promise<LoggedIOMessage[]> {
         if (messages.length === 0) {
             return Promise.resolve([]);
@@ -48,15 +49,22 @@ export class KyselyLoggedIOMessageRepository implements LoggedIOMessageRepositor
             return true;
         });
 
+        let storyId: number | null;
+        if (story) {
+            storyId = typeof story === 'number' ? story : story.id;
+        } else {
+            storyId = null;
+        }
+
         const newMessages: NewKyselyLoggedIOMessage[] = deduplicatedMessages.map((message) => ({
             messageId: message.messageId,
             externalId: message.externalId,
             userId: message.userId,
             content: message.content,
             createdAt: message.createdAt,
-            storyId: null,
+            storyId: storyId,
             type: message.type,
-            isHandled: message.type === 'outbound',
+            isHandled: false,
         }));
 
         await this.db

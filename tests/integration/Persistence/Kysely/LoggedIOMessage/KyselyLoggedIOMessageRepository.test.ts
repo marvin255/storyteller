@@ -73,7 +73,6 @@ describe('KyselyLoggedIOMessageRepository', () => {
                         createdAt: new Date('2025-12-31T23:59:59.678Z'),
                     },
                 ],
-                isHandled: false,
             },
             {
                 type: 'outbound',
@@ -87,11 +86,10 @@ describe('KyselyLoggedIOMessageRepository', () => {
                         createdAt: new Date('2025-12-31T23:59:59.678Z'),
                     },
                 ],
-                isHandled: true,
             },
         ])(
-            'creates $type messages with generated IDs and returns them by ascending creation time',
-            async ({ messages, isHandled }) => {
+            'creates unhandled $type messages with generated IDs and returns them by ascending creation time',
+            async ({ messages }) => {
                 const repository = new KyselyLoggedIOMessageRepository(database());
 
                 const logged = await repository.persistIOMessages(messages);
@@ -102,7 +100,7 @@ describe('KyselyLoggedIOMessageRepository', () => {
                         ...message,
                         id: expect.any(Number),
                         storyId: null,
-                        isHandled,
+                        isHandled: false,
                     })),
                 );
                 expect(new Set(logged.map((message) => message.id)).size).toBe(messages.length);
@@ -126,6 +124,64 @@ describe('KyselyLoggedIOMessageRepository', () => {
             },
         );
 
+        test.each([
+            {
+                messages: [
+                    inboundMessage,
+                    { ...inboundMessage, messageId: createId('second-message') },
+                ],
+                context: 'id',
+            },
+            {
+                messages: [
+                    inboundMessage,
+                    { ...inboundMessage, messageId: createId('second-message') },
+                ],
+                context: 'story',
+            },
+            {
+                messages: [
+                    outboundMessage,
+                    { ...outboundMessage, messageId: createId('second-message') },
+                ],
+                context: 'id',
+            },
+            {
+                messages: [
+                    outboundMessage,
+                    { ...outboundMessage, messageId: createId('second-message') },
+                ],
+                context: 'story',
+            },
+        ])(
+            'links new $messages.0.type messages to the supplied $context and leaves them unhandled',
+            async ({ messages, context }) => {
+                const row = await createInDb(STORY_TABLE, {
+                    externalId: externalIds.matching,
+                    status: 'new',
+                });
+                const story: Story = { ...row, externalId: externalIds.matching };
+                const repository = new KyselyLoggedIOMessageRepository(database());
+
+                const logged = await repository.persistIOMessages(
+                    messages,
+                    context === 'story' ? story : story.id,
+                );
+
+                const expected = messages.map((item) => ({
+                    ...item,
+                    id: expect.any(Number),
+                    storyId: story.id,
+                    isHandled: false,
+                }));
+                expect(logged).toHaveLength(expected.length);
+                expect(logged).toEqual(expect.arrayContaining(expected));
+                const stored = await selectFromDb(LOGGED_IO_MESSAGE_TABLE, { storyId: story.id });
+                expect(stored).toHaveLength(expected.length);
+                expect(stored).toEqual(expect.arrayContaining(expected));
+            },
+        );
+
         test.each([inboundMessage, outboundMessage])(
             'returns an existing $type message without replacing its contents or processing state',
             async (message) => {
@@ -138,17 +194,24 @@ describe('KyselyLoggedIOMessageRepository', () => {
                     storyId: story.id,
                     isHandled: true,
                 });
+                const otherStory = await createInDb(STORY_TABLE, {
+                    externalId: externalIds.other,
+                    status: 'new',
+                });
                 const repository = new KyselyLoggedIOMessageRepository(database());
 
                 await expect(
-                    repository.persistIOMessages([
-                        {
-                            ...inboundMessage,
-                            userId: createId('changed-user'),
-                            content: 'Changed incoming content.',
-                            createdAt: new Date('2026-02-01T00:00:00Z'),
-                        },
-                    ]),
+                    repository.persistIOMessages(
+                        [
+                            {
+                                ...inboundMessage,
+                                userId: createId('changed-user'),
+                                content: 'Changed incoming content.',
+                                createdAt: new Date('2026-02-01T00:00:00Z'),
+                            },
+                        ],
+                        otherStory.id,
+                    ),
                 ).resolves.toEqual([stored]);
                 await expect(
                     selectFromDb(LOGGED_IO_MESSAGE_TABLE, { id: stored.id }),
@@ -328,7 +391,6 @@ describe('KyselyLoggedIOMessageRepository', () => {
                         createdAt: new Date('2025-12-31T00:00:00Z'),
                     },
                 ],
-                isHandled: false,
             },
             {
                 type: 'outbound',
@@ -340,17 +402,16 @@ describe('KyselyLoggedIOMessageRepository', () => {
                         createdAt: new Date('2025-12-31T00:00:00Z'),
                     },
                 ],
-                isHandled: true,
             },
         ])(
             'keeps the first new $type message when a pair is repeated in a batch',
-            async ({ messages, isHandled }) => {
+            async ({ messages }) => {
                 const repository = new KyselyLoggedIOMessageRepository(database());
 
                 const logged = await repository.persistIOMessages(messages);
 
                 expect(logged).toEqual([
-                    { ...messages[0], id: expect.any(Number), storyId: null, isHandled },
+                    { ...messages[0], id: expect.any(Number), storyId: null, isHandled: false },
                 ]);
                 await expect(
                     selectFromDb(LOGGED_IO_MESSAGE_TABLE, { externalId: externalIds.matching }),

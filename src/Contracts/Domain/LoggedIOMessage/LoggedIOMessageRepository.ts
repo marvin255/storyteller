@@ -12,6 +12,7 @@ export interface LoggedIOMessageRepository {
      */
     persistIOMessages(
         messages: IOMessageInbound[] | IOMessageOutbound[],
+        story?: Story | number,
     ): Promise<LoggedIOMessage[]>;
 
     /** Mark the selected logs handled and link them to the supplied story. */
