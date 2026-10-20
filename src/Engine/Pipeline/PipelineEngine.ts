@@ -8,9 +8,8 @@ import type { IOMessageInbound } from '../../Contracts/IOChannel/IOMessageInboun
 import type { IOMessageOutbound } from '../../Contracts/IOChannel/IOMessageOutbound.js';
 import type { Logger } from '../../Contracts/Logger/Logger.js';
 import type { EntityManager } from '../../Contracts/Persistence/EntityManager.js';
-import { createId, type Id } from '../../Contracts/Shared/Id.js';
+import { createId, createRandomId, type Id } from '../../Contracts/Shared/Id.js';
 import { sanitizeMessageArray } from '../sanitizeMessageArray.js';
-import { PipelineLoggerWrapper } from './PipelineLoggerWrapper.js';
 import type { PipelineOperation } from './PipelineOperation.js';
 import type { PipelineOperationResult } from './PipelineOperationResult.js';
 
@@ -25,49 +24,44 @@ interface PipelineResult {
  * Narrative engine that processes messages through a pipeline of operations.
  */
 export class PipelineEngine implements Engine {
-    private readonly logger: PipelineLoggerWrapper;
-
     constructor(
         private readonly operations: readonly Readonly<PipelineOperation>[],
         private readonly entityManager: EntityManager,
         private readonly messageSender: IOChannelSender,
-        logger: Logger,
+        private readonly logger: Logger,
     ) {
         if (this.operations.length === 0) {
             throw new Error('PipelineEngine requires at least one operation to function.');
         }
-        this.logger = new PipelineLoggerWrapper(logger);
     }
 
     /**
      * Handles incoming messages by processing them through the pipeline.
      */
     async handle(message: IncomingMessage): Promise<void> {
-        this.logger.resetLogger();
+        let logger = this.logger.child({ source: 'PipelineEngine', runId: createRandomId() });
 
-        const messages = await this.sanitizeAndLogIncomingMessages(message);
+        const messages = await this.sanitizeAndLogIncomingMessages(message, logger);
         if (messages.length === 0) {
-            this.logger.warn('No messages found to process', { message });
+            logger.warn('No messages found to process', { message });
             return Promise.resolve();
         }
 
         const externalId = this.getExternalIdFromMessages(messages);
         if (!externalId) {
-            this.logger.warn('No external ID found in messages', { message });
+            logger.warn('No external ID found in messages', { message });
             return Promise.resolve();
         }
-        this.logger.extendLoggerWithContext({ externalId });
+        logger = logger.child({ externalId });
 
-        const story = await this.loadOrCreateStory(externalId);
-        this.logger.extendLoggerWithContext({ storyId: story.id });
+        const story = await this.loadOrCreateStory(externalId, logger);
+        logger = logger.child({ storyId: story.id });
 
-        this.logger.info('Start message processing', { messages });
-        const pipelineResult = await this.runPipeline(story, messages);
-        this.logger.info('Message processing completed', { pipelineResult });
+        logger.info('Start message processing', { messages });
+        const pipelineResult = await this.runPipeline(story, messages, logger);
+        logger.info('Message processing completed', { pipelineResult });
 
-        await this.storePipelineResults(messages, pipelineResult);
-
-        this.logger.resetLogger();
+        await this.storePipelineResults(messages, pipelineResult, logger);
     }
 
     /**
@@ -75,13 +69,14 @@ export class PipelineEngine implements Engine {
      */
     private async sanitizeAndLogIncomingMessages(
         message: IncomingMessage,
+        logger: Logger,
     ): Promise<LoggedIOMessage[]> {
-        const sanitizedMessages = sanitizeMessageArray(message, this.logger);
+        const sanitizedMessages = sanitizeMessageArray(message, logger);
         let messages: LoggedIOMessage[];
         try {
-            messages = await this.persistIncomingMessages(sanitizedMessages);
+            messages = await this.persistIncomingMessages(sanitizedMessages, logger);
         } catch (error) {
-            this.logger.error('Failed to persist messages', error, { message });
+            logger.error('Failed to persist messages', error, { message });
             throw error;
         }
         return Promise.resolve(messages);
@@ -92,15 +87,16 @@ export class PipelineEngine implements Engine {
      */
     private async persistIncomingMessages(
         messages: IOMessageInbound[],
+        logger: Logger,
     ): Promise<LoggedIOMessage[]> {
         const repo = await this.entityManager.getRepository(LoggedIOMessageRepository);
         const persistedMessages = await repo.persistIOMessages(messages);
         const unhandledInboundMessages = persistedMessages.filter((message) => {
             if (message.isHandled) {
-                this.logger.warn('Message was already handled', { message });
+                logger.warn('Message was already handled', { message });
             }
             if (message.type !== 'inbound') {
-                this.logger.warn('Message is not inbound', { message });
+                logger.warn('Message is not inbound', { message });
             }
             return !message.isHandled && message.type === 'inbound';
         });
@@ -120,13 +116,13 @@ export class PipelineEngine implements Engine {
     /**
      * Loads an existing story by external ID or creates a new one if none exists.
      */
-    private async loadOrCreateStory(externalId: Id): Promise<Story> {
+    private async loadOrCreateStory(externalId: Id, logger: Logger): Promise<Story> {
         const storyRepository = await this.entityManager.getRepository(StoryRepository);
         let story: Story;
         try {
             story = await storyRepository.findOrCreateActiveStoryForExternalId(externalId);
         } catch (error) {
-            this.logger.error('Failed to load or create story', error);
+            logger.error('Failed to load or create story', error);
             throw error;
         }
         return story;
@@ -135,11 +131,20 @@ export class PipelineEngine implements Engine {
     /**
      * Runs all operations in the pipeline sequentially, passing the context to each operation.
      */
-    private async runPipeline(story: Story, messages: LoggedIOMessage[]): Promise<PipelineResult> {
+    private async runPipeline(
+        story: Story,
+        messages: LoggedIOMessage[],
+        logger: Logger,
+    ): Promise<PipelineResult> {
         const newMessages: IOMessageOutbound[] = [];
         let updatedStory = story;
         for (const operation of this.operations) {
-            const result = await this.runPipelineOperation(operation, updatedStory, messages);
+            const result = await this.runPipelineOperation(
+                operation,
+                updatedStory,
+                messages,
+                logger,
+            );
             if (result.newMessages) {
                 newMessages.push(...result.newMessages);
             }
@@ -147,7 +152,7 @@ export class PipelineEngine implements Engine {
                 updatedStory = { ...updatedStory, ...result.storyChanges };
             }
             if (result.stopProcessing) {
-                this.logger.info('Pipeline stopped');
+                logger.info('Pipeline stopped');
                 break;
             }
         }
@@ -161,8 +166,9 @@ export class PipelineEngine implements Engine {
         operation: PipelineOperation,
         story: Story,
         messages: LoggedIOMessage[],
+        logger: Logger,
     ): Promise<PipelineOperationResult> {
-        const operationLogger = this.logger.child({
+        const operationLogger = logger.child({
             operation: operation.constructor.name,
         });
 
@@ -193,6 +199,7 @@ export class PipelineEngine implements Engine {
     private async storePipelineResults(
         incomingMessages: LoggedIOMessage[],
         pipelineResult: PipelineResult,
+        logger: Logger,
     ): Promise<void> {
         let outboundLoggedMessages: LoggedIOMessage[];
         try {
@@ -210,14 +217,14 @@ export class PipelineEngine implements Engine {
                 );
             });
         } catch (error) {
-            this.logger.error('Pipeline updates failed', error, { pipelineResult });
+            logger.error('Pipeline updates failed', error, { pipelineResult });
             throw error;
         }
 
         try {
             await this.messageSender.send(pipelineResult.newMessages);
         } catch (error) {
-            this.logger.error('Pipeline message sending failed', error, { pipelineResult });
+            logger.error('Pipeline message sending failed', error, { pipelineResult });
             throw error;
         }
 
@@ -229,7 +236,7 @@ export class PipelineEngine implements Engine {
                 pipelineResult.updatedStory,
             );
         } catch (error) {
-            this.logger.error('Pipeline message sending failed', error, { pipelineResult });
+            logger.error('Pipeline message sending failed', error, { pipelineResult });
             throw error;
         }
     }
