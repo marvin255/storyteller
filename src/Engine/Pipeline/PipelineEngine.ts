@@ -194,6 +194,26 @@ export class PipelineEngine implements Engine {
         incomingMessages: LoggedIOMessage[],
         pipelineResult: PipelineResult,
     ): Promise<void> {
+        let outboundLoggedMessages: LoggedIOMessage[];
+        try {
+            outboundLoggedMessages = await this.entityManager.runInTransaction(async (em) => {
+                const storyRepository = await em.getRepository(StoryRepository);
+                await storyRepository.save(pipelineResult.updatedStory);
+                const messageRepository = await em.getRepository(LoggedIOMessageRepository);
+                await messageRepository.markAllHandled(
+                    incomingMessages,
+                    pipelineResult.updatedStory,
+                );
+                return messageRepository.persistIOMessages(
+                    pipelineResult.newMessages,
+                    pipelineResult.updatedStory,
+                );
+            });
+        } catch (error) {
+            this.logger.error('Pipeline updates failed', error, { pipelineResult });
+            throw error;
+        }
+
         try {
             await this.messageSender.send(pipelineResult.newMessages);
         } catch (error) {
@@ -202,18 +222,14 @@ export class PipelineEngine implements Engine {
         }
 
         try {
-            await this.entityManager.runInTransaction(async (em) => {
-                const storyRepository = await em.getRepository(StoryRepository);
-                await storyRepository.save(pipelineResult.updatedStory);
-                const messageRepository = await em.getRepository(LoggedIOMessageRepository);
-                await messageRepository.persistIOMessages(pipelineResult.newMessages);
-                await messageRepository.markAllHandled(
-                    incomingMessages,
-                    pipelineResult.updatedStory,
-                );
-            });
+            const messageRepository =
+                await this.entityManager.getRepository(LoggedIOMessageRepository);
+            await messageRepository.markAllHandled(
+                outboundLoggedMessages,
+                pipelineResult.updatedStory,
+            );
         } catch (error) {
-            this.logger.error('Pipeline updates failed', error, { pipelineResult });
+            this.logger.error('Pipeline message sending failed', error, { pipelineResult });
             throw error;
         }
     }
