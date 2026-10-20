@@ -10,4 +10,7 @@ export interface EntityManager {
 
     /** Closes the EntityManager and releases any resources it holds, such as database connections. */
     close(): Promise<void>;
+
+    /** Run provided action within an atomic transaction. */
+    runInTransaction<T>(action: (em: EntityManager) => Promise<T>): Promise<T>;
 }

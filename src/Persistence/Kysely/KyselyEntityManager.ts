@@ -58,4 +58,15 @@ export class KyselyEntityManager implements EntityManager {
         }
         this.factories.set(token, factory);
     }
+
+    /**
+     * Run provided action within DB transaction.
+     */
+    runInTransaction<T>(action: (em: EntityManager) => Promise<T>): Promise<T> {
+        return this.db.transaction().execute(async (trx) => {
+            const em = new KyselyEntityManager(trx, this.config);
+            em.factories = new Map(this.factories);
+            return action(em);
+        });
+    }
 }
