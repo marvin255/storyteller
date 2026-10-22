@@ -6,11 +6,13 @@ import type { Id } from '../Shared/Id.js';
  */
 export interface IOMessage {
     /** Unique identifier for this message */
-    id: Id;
-    /** Session/conversation identifier */
-    sessionId: Id;
+    messageId: Id;
+    /** External identifier related to a message. One external id can map to multiple stories, but active story is at most one. */
+    externalId: Id;
     /** User identifier */
     userId: Id;
     /** Message content */
     content: string;
+    /** Timestamp when the message was created */
+    createdAt: Date;
 }

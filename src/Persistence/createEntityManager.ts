@@ -1,11 +1,16 @@
 import type { ApplicationConfig } from '../Contracts/Config/ApplicationConfig.js';
+import { LoggedIOMessageRepository } from '../Contracts/Domain/LoggedIOMessage/LoggedIOMessageRepository.js';
 import { StoryRepository } from '../Contracts/Domain/Story/StoryRepository.js';
 import type { EntityManager } from '../Contracts/Persistence/EntityManager.js';
 import { createKysely } from './Kysely/createKysely.js';
 import { KyselyEntityManager } from './Kysely/KyselyEntityManager.js';
+import { KyselyLoggedIOMessageRepository } from './Kysely/LoggedIOMessage/KyselyLoggedIOMessageRepository.js';
 import { KyselyStoryRepository } from './Kysely/Story/KyselyStoryRepository.js';
 
 const registerRepositories = (entityManager: KyselyEntityManager) => {
+    entityManager.registerRepository(LoggedIOMessageRepository, (db) =>
+        Promise.resolve(new KyselyLoggedIOMessageRepository(db)),
+    );
     entityManager.registerRepository(StoryRepository, (db) =>
         Promise.resolve(new KyselyStoryRepository(db)),
     );

@@ -6,5 +6,5 @@ import type { IOMessageOutbound } from './IOMessageOutbound.js';
  */
 export interface IOChannelSender {
     /** Send narrative responses to the user via the UI channel */
-    send(message: IOMessageOutbound | IOMessageOutbound[]): void;
+    send(message: IOMessageOutbound | IOMessageOutbound[]): Promise<void>;
 }

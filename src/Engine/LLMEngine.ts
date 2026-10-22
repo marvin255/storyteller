@@ -7,23 +7,21 @@ import { createRandomId } from '../Contracts/Shared/Id.js';
 export class LLMEngine implements Engine {
     constructor(private readonly sender: IOChannelSender) {}
 
-    handle(message: IOMessageInbound | IOMessageInbound[]): Promise<void> {
+    async handle(message: IOMessageInbound | IOMessageInbound[]): Promise<void> {
         const messages = Array.isArray(message) ? message : [message];
-        messages
-            .map((inboundMessage) => this.createOutboundMessage(inboundMessage))
-            .forEach((outboundMessage) => {
-                this.sender.send(outboundMessage);
-            });
-
-        return Promise.resolve();
+        for (const inboundMessage of messages) {
+            await this.sender.send(this.createOutboundMessage(inboundMessage));
+        }
     }
 
     private createOutboundMessage(message: IOMessageInbound): IOMessageOutbound {
         return {
-            id: createRandomId(),
-            sessionId: message.sessionId,
+            type: 'outbound',
+            messageId: createRandomId(),
+            externalId: message.externalId,
             userId: message.userId,
             content: `LLM response placeholder: ${message.content}`,
+            createdAt: new Date(),
         };
     }
 }

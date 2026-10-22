@@ -10,8 +10,11 @@ export default {
       },
     ],
   },
-  roots: ['<rootDir>/tests'],
-  testMatch: ['**/*.test.ts', '**/*.spec.ts'],
+  roots: ['<rootDir>/tests/unit'],
+  testMatch: [
+    '<rootDir>/tests/unit/**/*.test.ts',
+    '<rootDir>/tests/unit/**/*.spec.ts',
+  ],
   moduleFileExtensions: ['ts', 'js', 'json'],
   collectCoverageFrom: ['src/**/*.ts', '!src/**/*.d.ts'],
   moduleNameMapper: {

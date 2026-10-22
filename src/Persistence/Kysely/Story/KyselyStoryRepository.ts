@@ -1,10 +1,10 @@
-import type { Kysely } from 'kysely';
+import { createHash } from 'node:crypto';
+
+import { type Kysely, sql } from 'kysely';
 
 import type { Story } from '../../../Contracts/Domain/Story/Story.js';
 import type { StoryRepository } from '../../../Contracts/Domain/Story/StoryRepository.js';
-import { createDateTime } from '../../../Contracts/Shared/DateTime.js';
 import { createId, type Id } from '../../../Contracts/Shared/Id.js';
-import { createLocale } from '../../../Contracts/Shared/Locale.js';
 import type { KyselyDatabase } from '../KyselyDatabase.js';
 import { type KyselyStory, STORY_TABLE } from './KyselyStory.js';
 
@@ -13,11 +13,9 @@ import { type KyselyStory, STORY_TABLE } from './KyselyStory.js';
  */
 const convertKyselyToDomain = (kyselyStory: KyselyStory): Story => {
     return {
-        id: createId(kyselyStory.id),
-        locale: createLocale('en-US'),
-        storyDescription: '',
-        createdAt: createDateTime('2026-01-01T00:00:00Z'),
-        closedAt: null,
+        id: kyselyStory.id,
+        externalId: createId(kyselyStory.externalId),
+        status: kyselyStory.status,
     };
 };
 
@@ -27,13 +25,47 @@ const convertKyselyToDomain = (kyselyStory: KyselyStory): Story => {
 export class KyselyStoryRepository implements StoryRepository {
     constructor(private db: Kysely<KyselyDatabase>) {}
 
-    async findStoryById(id: Id): Promise<Story | null> {
-        const row = await this.db
-            .selectFrom(STORY_TABLE)
-            .selectAll()
-            .where('id', '=', id)
-            .executeTakeFirst();
+    async save(story: Story): Promise<void> {
+        await this.db
+            .updateTable(STORY_TABLE)
+            .set({ externalId: story.externalId, status: story.status })
+            .where('id', '=', story.id)
+            .execute();
+    }
 
-        return row ? convertKyselyToDomain(row) : null;
+    async findOrCreateActiveStoryForExternalId(externalId: Id): Promise<Story> {
+        // Namespace and hash the external ID into a stable signed 64-bit advisory lock key.
+        const lockKey = createHash('sha256')
+            .update(`story:${externalId}`)
+            .digest()
+            .readBigInt64BE(0)
+            .toString();
+
+        return this.db
+            .transaction()
+            .setIsolationLevel('read committed')
+            .execute(async (trx) => {
+                await sql`SET LOCAL lock_timeout = '5s'`.execute(trx);
+                await sql`SELECT pg_advisory_xact_lock(${lockKey}::bigint)`.execute(trx);
+
+                const existing = await trx
+                    .selectFrom(STORY_TABLE)
+                    .selectAll()
+                    .where('externalId', '=', externalId)
+                    .where('status', '!=', 'closed')
+                    .executeTakeFirst();
+
+                if (existing) {
+                    return convertKyselyToDomain(existing);
+                }
+
+                const created = await trx
+                    .insertInto(STORY_TABLE)
+                    .values({ externalId, status: 'new' })
+                    .returningAll()
+                    .executeTakeFirstOrThrow();
+
+                return convertKyselyToDomain(created);
+            });
     }
 }
